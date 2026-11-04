@@ -10,8 +10,6 @@
   --mono:"Cascadia Code","Cascadia Mono",Consolas,"Courier New",monospace;
   --r:12px;
 }
-
-/* 1. 夜间模式 (默认 Dark) */
 body[data-theme="dark"] {
   --bg0:#070b13; --bg1:#0b101c; --bg2:#0e1524;
   --panel:#111a2c; --panel2:#0c1322; --panel3:#182338;
@@ -27,8 +25,6 @@ body[data-theme="dark"] {
   --shadow-panel:0 8px 24px rgba(0,0,0,.35);
   --shadow-toast:0 10px 30px rgba(0,0,0,.5);
 }
-
-/* 2. 白天模式 (Light) */
 body[data-theme="light"] {
   --bg0:#f4f7f9; --bg1:#e6ecf2; --bg2:#dbe3ec;
   --panel:#ffffff; --panel2:#f0f4f8; --panel3:#e2eaf3;
@@ -44,8 +40,6 @@ body[data-theme="light"] {
   --shadow-panel:0 8px 24px rgba(0,0,0,.06);
   --shadow-toast:0 10px 30px rgba(0,0,0,.1);
 }
-
-/* 3. 护眼模式 (Eye-care) */
 body[data-theme="eye-care"] {
   --bg0:#e8f0e8; --bg1:#d8e6d8; --bg2:#c8dec8;
   --panel:#d4e8d4; --panel2:#cbe0cb; --panel3:#bcd6bc;
@@ -61,7 +55,6 @@ body[data-theme="eye-care"] {
   --shadow-panel:0 8px 24px rgba(0,0,0,.08);
   --shadow-toast:0 10px 30px rgba(0,0,0,.15);
 }
-
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%}
 body{
@@ -72,22 +65,21 @@ body{
     linear-gradient(180deg,var(--bg1),var(--bg0));
   color:var(--text);
   display:flex;flex-direction:column;
-  min-width:980px;min-height:640px;
+  min-width:850px;min-height:600px;
   overflow:hidden;
   transition: background-color .3s, color .3s;
 }
 ::selection{background:var(--accent-soft); color:var(--text)}
 button{font-family:inherit;cursor:pointer}
 input,select{font-family:inherit}
-/* 滚动条 */
-::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar{width:14px;height:14px}
 ::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:var(--scroll-thumb);border-radius:6px;border:2px solid transparent;background-clip:content-box}
-::-webkit-scrollbar-thumb:hover{background:var(--scroll-thumb-hover);background-clip:content-box;border:2px solid transparent}
+::-webkit-scrollbar-thumb{background:var(--scroll-thumb);border-radius:8px;border:3px solid transparent;background-clip:content-box}
+::-webkit-scrollbar-thumb:hover{background:var(--scroll-thumb-hover);background-clip:content-box;border:3px solid transparent}
+::-webkit-scrollbar-corner{background:transparent}
 
 #app{display:flex;flex-direction:column;height:100vh;padding:14px 16px 10px;gap:10px}
 
-/* ============ 顶栏 ============ */
 .topbar{
   display:flex;align-items:center;gap:18px;
   background:linear-gradient(180deg, rgba(255,255,255,.03),transparent),var(--panel);
@@ -119,7 +111,6 @@ input,select{font-family:inherit}
 .portsel{display:flex;gap:6px}
 .portsel select{min-width:150px}
 
-/* 按钮 */
 .btn{
   border:1px solid var(--line2);background:var(--panel3);color:var(--text);
   border-radius:8px;height:32px;padding:0 14px;font-size:12.5px;font-weight:600;
@@ -142,7 +133,6 @@ input,select{font-family:inherit}
 .btn.accent{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
 .btn.accent:hover{background:var(--accent);color:#fff}
 
-/* ============ 工具栏 ============ */
 .toolbar{
   display:flex;align-items:center;gap:8px 10px;flex-wrap:wrap;row-gap:8px;
   background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
@@ -172,7 +162,7 @@ input,select{font-family:inherit}
 }
 .alarm input[type=text]:focus{border-color:var(--warn);box-shadow:0 0 0 3px rgba(251,191,36,.15)}
 .spacer{flex:1}
-/* 开关 */
+
 .switch{display:flex;align-items:center;gap:7px;cursor:pointer;user-select:none}
 .switch input{display:none}
 .switch .slider{
@@ -187,35 +177,41 @@ input,select{font-family:inherit}
 .switch input:checked + .slider::after{left:16px;background:#fff}
 .sw-label{font-size:12.5px;color:var(--text2)}
 
-/* 主题下拉框专用样式 */
 .theme-select {
   background:var(--panel2); color:var(--text); border:1px solid var(--line);
   border-radius:7px; height:26px; font-size:12px; padding:0 6px; outline:none; cursor:pointer;
 }
 .theme-select:focus{border-color:var(--accent); box-shadow:0 0 0 2px var(--accent-soft)}
 
-/* ============ 接收区 ============ */
-.viewer-wrap{position:relative;flex:1;min-height:200px;display:flex;flex-direction:column;overflow:hidden;
+/* ============ 接收区（虚拟滚动） ============ */
+.viewer-wrap{position:relative;flex:1;min-height:200px;display:flex;flex-direction:column;overflow:visible;
   background:var(--viewer-bg);border:1px solid var(--line);border-radius:var(--r); transition: background-color .3s;}
-.viewer{flex:1;overflow-y:auto;padding:10px 14px;font-family:var(--mono);font-size:13px;line-height:1.62;}
 
-/* 使用 Flex 分列布局解决换行对齐问题 */
-.viewer .line{display:flex;align-items:flex-start;color:var(--text);padding:0 2px;border-radius:4px;}
-.viewer .line .msg{flex-grow:1;white-space:pre-wrap;word-break:break-all;}
+.viewer{flex:1;overflow-y:auto;overflow-x:auto;position:relative; font-family:var(--mono);font-size:13px;}
 
-.viewer .line:hover{background:var(--accent-soft)}
-.viewer .line .ts{color:var(--text3);margin-right:8px;user-select:none;font-size:12px;flex-shrink:0;line-height:1.75;}
+.viewer-phantom { width: 1px; opacity: 0; pointer-events: none; }
+.viewer-content { position: absolute; top: 0; left: 0; padding: 10px 14px; width: fit-content; min-width: calc(100% - 28px); }
+
+/* 强制单行显示，保证高度一致，避免虚拟滚动计算错乱 */
+.viewer .line{
+  display:flex; align-items:center; height: 24px; line-height: 24px;
+  color:var(--text); padding:0 2px; border-radius:4px; white-space:nowrap;
+  width: max-content;
+}
+.viewer .line .msg{white-space:pre; flex:0 0 auto;}
+
+.viewer .line .ts{color:var(--text3);margin-right:8px;user-select:none;font-size:12px;flex-shrink:0;}
 body.ts-off .viewer .line .ts{display:none}
 .viewer .line .hex{color:var(--accent)}
 .viewer .line .asc{color:var(--text2);margin-left:10px}
 .viewer .line mark{background:rgba(251,191,36,.35);color:var(--text);border-radius:3px;padding:0 1px}
-.viewer .line.pending{color:var(--text3);font-style:italic}
-.viewer .line.sys{color:var(--text3);font-style:italic}
+.viewer .line.sys{color:var(--text3);font-style:italic;}
 .viewer .line.sys b{color:var(--warn)}
 .viewer .line.sys.err b{color:var(--danger)}
 .viewer .line.txline{color:var(--accent);background:var(--accent-soft);border-left:3px solid var(--accent);padding-left:6px;border-radius:0 4px 4px 0}
 .viewer .line.txline .dir{color:var(--accent);font-weight:700;margin-right:4px;user-select:none}
-.st-autolog{font-size:11px;color:var(--text3);font-family:var(--mono);white-space:nowrap}
+
+.st-autolog{font-size:11px;color:var(--text3);font-family:var(--mono);white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width: 200px;}
 .st-autolog.on{color:var(--ok)}
 .st-autolog.dl{color:var(--warn)}
 .empty{
@@ -235,14 +231,12 @@ body.ts-off .viewer .line .ts{display:none}
 }
 .hidden{display:none!important}
 
-/* 报警闪烁 */
 body.alarm .viewer-wrap{animation:alarmPulse 1s ease-in-out 3}
 @keyframes alarmPulse{
   0%,100%{box-shadow:0 0 0 0 rgba(248,113,113,0)}
   50%{box-shadow:0 0 0 5px rgba(248,113,113,.55), inset 0 0 40px rgba(248,113,113,.12)}
 }
 
-/* ============ 发送区 ============ */
 .sender{
   flex-shrink:0;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
   padding:10px 12px;display:flex;flex-direction:column;gap:8px; box-shadow:var(--shadow-panel);
@@ -270,11 +264,11 @@ body.alarm .viewer-wrap{animation:alarmPulse 1s ease-in-out 3}
 .send-row input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
 .send-row .btn{height:36px}
 
-/* ============ 状态栏 ============ */
 .statusbar{
-  flex-shrink:0;display:flex;align-items:center;gap:16px;
+  display:flex;align-items:center;gap:16px;
   background:var(--panel);border:1px solid var(--line);border-radius:10px;
-  padding:6px 14px;font-size:12px;color:var(--text2); box-shadow:var(--shadow-panel);
+  padding:8px 14px;font-size:12px;color:var(--text2); box-shadow:var(--shadow-panel);
+  flex-shrink:0;
 }
 .dot{width:9px;height:9px;border-radius:50%;background:var(--text3);flex-shrink:0}
 .dot.on{background:var(--ok);box-shadow:0 0 0 0 rgba(52,211,153,.6);animation:dotPulse 2s infinite}
@@ -290,7 +284,6 @@ body.alarm .viewer-wrap{animation:alarmPulse 1s ease-in-out 3}
 #st-text.on{color:var(--ok)}
 #st-text.err{color:var(--danger)}
 
-/* ============ Toast ============ */
 #toasts{position:fixed;top:16px;right:16px;z-index:999;display:flex;flex-direction:column;gap:8px;max-width:360px}
 .toast{
   background:var(--panel3);border:1px solid var(--line2);color:var(--text);
@@ -303,7 +296,6 @@ body.alarm .viewer-wrap{animation:alarmPulse 1s ease-in-out 3}
 .toast.err{border-left:3px solid var(--danger)}
 @keyframes toastIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:none}}
 
-/* 不支持提示条 */
 .unsupported{
   position:fixed;top:0;left:0;right:0;z-index:1000;background:#7f1d1d;color:#fecaca;
   text-align:center;padding:8px;font-size:13px;font-weight:600;
@@ -379,6 +371,17 @@ body.alarm .viewer-wrap{animation:alarmPulse 1s ease-in-out 3}
     </div>
   </header>
 
+  <section class="statusbar">
+    <span class="st-item" id="st-clock">--:--:--</span>
+    <span class="st-item">接收 <b id="st-rx">0 B</b></span>
+    <span class="st-item">速率 <b id="st-rate">0 B/s</b></span>
+    <span class="st-item">发送 <b id="st-tx">0 B</b></span>
+    <span class="st-item" id="st-params"></span>
+    <span class="spacer"></span>
+    <span class="dot" id="st-dot"></span>
+    <span id="st-text">未连接</span>
+  </section>
+
   <section class="toolbar">
     <div class="seg" id="seg-mode">
       <button data-mode="ascii" class="on">文本</button>
@@ -412,8 +415,19 @@ body.alarm .viewer-wrap{animation:alarmPulse 1s ease-in-out 3}
       <input type="text" id="in-alarm" placeholder="报警关键字,逗号分隔" spellcheck="false">
     </div>
     <div class="sep"></div>
-    <label class="chk" title="连接成功后自动保存日志到本地"><input type="checkbox" id="chk-autolog"><span>自动保存日志</span></label>
-    <button id="btn-logdir" class="btn ghost sm" title="选择自动保存目录（不选择则保存到浏览器下载目录，每段文件自动命名）">保存位置</button>
+    <label class="chk" title="连接成功后自动保存日志到浏览器下载目录"><input type="checkbox" id="chk-autolog"><span>自动保存日志</span></label>
+    <select id="sel-logsize" class="theme-select" title="单个文件的最大容量">
+      <option value="1">1 MB</option>
+      <option value="2">2 MB</option>
+      <option value="5">5 MB</option>
+      <option value="10">10 MB</option>
+      <option value="20">20 MB</option>
+      <option value="50">50 MB</option>
+      <option value="100">100 MB</option>
+      <option value="200">200 MB</option>
+      <option value="300">300 MB</option>
+      <option value="500">500 MB</option>
+    </select>
     <span id="st-autolog" class="st-autolog" title="自动日志状态"></span>
     <div class="spacer"></div>
     <button id="btn-export" class="btn accent sm" title="导出当前显示的日志为 TXT 文件" aria-label="导出当前会话日志">导出TXT</button>
@@ -421,6 +435,8 @@ body.alarm .viewer-wrap{animation:alarmPulse 1s ease-in-out 3}
 
   <section class="viewer-wrap" id="viewer-wrap">
     <div id="viewer" class="viewer" role="log" aria-label="串口数据接收区" aria-live="off">
+      <div id="viewer-phantom" class="viewer-phantom"></div>
+      <div id="viewer-content" class="viewer-content"></div>
       <div class="empty" id="empty-state">
         <div class="empty-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -455,25 +471,11 @@ body.alarm .viewer-wrap{animation:alarmPulse 1s ease-in-out 3}
       <button id="btn-send" class="btn primary">发送</button>
     </div>
   </section>
-
-  <footer class="statusbar">
-    <span class="dot" id="st-dot"></span>
-    <span id="st-text">未连接</span>
-    <span class="st-item">RX <b id="st-rx">0 B</b></span>
-    <span class="st-item">速率 <b id="st-rate">0 B/s</b></span>
-    <span class="st-item">TX <b id="st-tx">0 B</b></span>
-    <span class="st-item" id="st-params"></span>
-    <span class="spacer"></span>
-    <span class="st-item" id="st-clock">--:--:--</span>
-    <span class="st-item muted">v0.6.0 · 数据仅存于本机</span>
-  </footer>
 </div>
 <div id="toasts"></div>
 <script>'use strict';
 /* =====================================================================
  * Serial Listener · 串口侦听器
- * 单文件纯前端实现（Web Serial API，Chrome/Edge，file:// 可直接运行）
- * 模块：Store(配置) / Serial(串口核心) / View(渲染) / Alarm(报警) / UI(交互) / Theme(主题)
  * ===================================================================== */
 
 const TEST_MODE = new URLSearchParams(location.search).has('test');
@@ -486,7 +488,6 @@ function fmtTime(d = new Date()) {
   return '[' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds()) + '.' + pad(d.getMilliseconds(), 3) + ']';
 }
 
-// 修改：文件命名格式 YYYY-MM-DD_HH-mm-ss
 function fmtFileTime(d = new Date()) {
   return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + '_' + pad(d.getHours()) + '-' + pad(d.getMinutes()) + '-' + pad(d.getSeconds());
 }
@@ -500,6 +501,32 @@ function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 function escapeRe(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+
+// 把 Web Serial / 浏览器底层英文错误翻译成中文
+function errZh(e) {
+  const msg = (e && e.message) || (e && e.name) || String(e);
+  const map = [
+    [/SecurityError/i, '安全错误：权限被拒绝'],
+    [/NotFoundError/i, '未找到设备'],
+    [/NotAllowedError/i, '操作不被允许'],
+    [/NotReadableError/i, '设备不可读（可能被其他程序占用）'],
+    [/InvalidStateError/i, '设备状态无效'],
+    [/NetworkError/i, '网络错误'],
+    [/AbortError/i, '操作已取消'],
+    [/TypeError/i, '参数类型错误'],
+    [/TypeError: Failed to fetch/i, '网络请求失败'],
+    [/Cannot open serial port/i, '无法打开串口（可能被占用或不存在）'],
+    [/Failed to open port/i, '打开串口失败'],
+    [/Access denied/i, '访问被拒绝'],
+    [/Operation not supported/i, '操作不支持'],
+    [/Port is already open/i, '串口已打开'],
+    [/Device has been removed/i, '设备已被移除'],
+  ];
+  for (const [re, zh] of map) {
+    if (re.test(msg)) return zh;
+  }
+  return msg;
+}
 function hexStr(bytes) { return Array.from(bytes).map((b) => b.toString(16).padStart(2, '0').toUpperCase()).join(' '); }
 function toast(msg, type = 'info', ms = 3200) {
   const box = $('#toasts');
@@ -517,10 +544,11 @@ const Store = {
     return {
       theme: 'auto',
       baud: 115200, dataBits: 8, stopBits: 1, parity: 'none', flowControl: 'none', encoding: 'utf-8',
-      mode: 'ascii', showTs: true, autoScroll: true,
+      mode: 'ascii', showTs: true, autoScroll: false,
       caseSensitive: false, filter: '', filterOnly: false,
       alarmOn: false, alarmWords: '',
       autoLog: false,
+      logLimitMB: 2,
       sendMode: 'ascii', crlf: 'none', quickSends: ['AT', 'AT+RST', 'Hello', '0102030405'],
       cmdHist: [],
       lastPortName: ''
@@ -539,7 +567,7 @@ let S = Store.load();
 const state = {
   port: null, reader: null, writer: null, connected: false,
   lastPort: null, lastPortName: '',
-  pending: '', pendingBytes: [], pendingEl: null,
+  pending: '', pendingBytes: [], 
   rx: 0, tx: 0,
   paused: false, pausedBuf: [], pausedBytes: 0,
   log: [],
@@ -553,9 +581,58 @@ let liveDecoder = null;
 let liveEncoding = null;
 let lastRx = 0;
 const EMPTY_STATE_HTML = '<div class="empty" id="empty-state"><div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h4l2-7 4 14 2-7h8"/></svg></div><h3>等待串口数据</h3><p>点击右上角「连接」选择串口，即可开始实时侦听</p></div>';
-const MAX_LOG = 20000;
-const MAX_LINES = 6000;
+
+const MAX_LOG = 100000; 
 const HEX_COL = 16;
+const ROW_HEIGHT = 24; 
+const BUFFER_ROWS = 10; 
+
+// 高性能批处理对象
+const Batch = {
+  _queue: [],
+  _raf: null,
+  add(entry) {
+    this._queue.push(entry);
+    if (!this._raf) {
+      this._raf = requestAnimationFrame(() => this.flush());
+    }
+  },
+  flush() {
+    this._raf = null;
+    if (!this._queue.length) return;
+    
+    // 1. 批量存入内存
+    const items = this._queue;
+    this._queue = [];
+    
+    for (const e of items) {
+      AutoLog.push(e);
+      if (e.kind === 'txt' || e.kind === 'hex') Alarm.check(e.ascii);
+      
+      if (state.paused) {
+        // 暂停期间：数据缓存到 pausedBuf，不进 state.log，不触发渲染
+        state.pausedBuf.push(e);
+        state.pausedBytes += (e.ascii ? e.ascii.length : 0) + (e.hex ? e.hex.length : 0);
+      } else {
+        state.log.push(e);
+      }
+    }
+    
+    // 暂停时不触发渲染，只更新 banner 显示缓存数量
+    if (state.paused) {
+      updatePauseBanner();
+      return;
+    }
+    
+    // 2. 批量裁剪（超过 1000 条才裁剪，避免频繁触发 O(n) 操作）
+    if (state.log.length > MAX_LOG + 1000) {
+      state.log.splice(0, 1000);
+    }
+    
+    // 3. 统一触发渲染
+    View.updateData();
+  }
+};
 
 const Theme = {
   getAutoTheme() {
@@ -581,249 +658,179 @@ const Theme = {
   }
 };
 
-let fakeSerial = null;
-let FakePortClass = null;
-if (TEST_MODE) {
-  FakePortClass = class FakePort {
-    constructor(name, idx) {
-      this.name = name; this.opened = false; this._ctrl = null; this._tx = [];
-      this._info = { usbVendorId: 0x1234, usbProductId: idx || 1 };
-      this._failOpen = null; this._failWrite = null;
-    }
-    async open(opts) {
-      if (this._failOpen) { const e = new Error(this._failOpen); this._failOpen = null; throw e; }
-      this.opened = true; this.opts = opts;
-      const self = this;
-      this.readable = new ReadableStream({ start(c) { self._ctrl = c; } });
-      this.writable = new WritableStream({
-        write(chunk) {
-          if (self._failWrite) { const e = new Error(self._failWrite); self._failWrite = null; throw e; }
-          self._tx.push(new Uint8Array(chunk));
-        },
-        close() {}, abort() {}
-      });
-    }
-    async close() { this.opened = false; if (this._ctrl) { try { await this._ctrl.close(); } catch (e) {} } }
-    async forget() {}
-    getInfo() { return this._info; }
-    feed(bytes) { if (this._ctrl) this._ctrl.enqueue(bytes); }
-    txAll() { const total = this._tx.reduce((a, b) => a + b.length, 0); return { bytes: this._tx, total }; }
-    drop() { if (this._ctrl) this._ctrl.error(new Error('模拟异常断开')); }
-  }
-  fakeSerial = {
-    _ports: [],
-    _cancelNext: false,
-    async requestPort() {
-      if (this._cancelNext) { this._cancelNext = false; throw new DOMException('用户取消选择', 'NotFoundError'); }
-      if (!this._ports.length) this._ports.push(new FakePortClass('COM10', 1));
-      return this._ports[0];
-    },
-    async getPorts() { return this._ports.slice(); }
-  };
-  try {
-    const saved = sessionStorage.getItem('__testPorts');
-    if (saved) fakeSerial._ports = saved.split(',').filter(Boolean).map((n, i) => new FakePortClass(n, i + 1));
-  } catch (e) {}
-  Object.defineProperty(navigator, 'serial', { value: fakeSerial, configurable: true });
-}
-
-const Serial = {
-  async ensure() {
-    if (!navigator.serial) throw new Error('当前浏览器不支持 Web Serial API，请使用 Chrome / Edge 打开');
-  },
-  async refreshPorts(selectName) {
-    try {
-      await this.ensure();
-      const ports = await navigator.serial.getPorts();
-      const sel = $('#sel-port');
-      sel.innerHTML = '';
-      if (!ports.length) {
-        sel.innerHTML = '<option value="">未授权端口，请点击选择…</option>';
-      } else {
-        ports.forEach((p, i) => {
-          const o = document.createElement('option');
-          o.value = String(i);
-          o.textContent = portName(p, i);
-          sel.appendChild(o);
-        });
-        if (selectName) {
-          const idx = ports.findIndex((p) => portName(p) === selectName);
-          if (idx >= 0) sel.value = String(idx);
-        }
-      }
-      state.grantedPorts = ports;
-    } catch (e) {
-      toast(e.message, 'err');
-    }
-  },
-  async pickPort() {
-    await this.ensure();
-    try {
-      const port = await navigator.serial.requestPort();
-      state.lastPort = port;
-      state.lastPortName = portName(port);
-      S.lastPortName = state.lastPortName; Store.save();
-      await this.refreshPorts(state.lastPortName);
-      return port;
-    } catch (e) { return null; }
-  },
-  getOpts() {
-    return {
-      baudRate: Number(S.baud),
-      dataBits: Number(S.dataBits),
-      stopBits: Number(S.stopBits),
-      parity: S.parity,
-      flowControl: S.flowControl
-    };
-  },
-  async connect(port, opts) {
-    state.busy = true; updateConnectBtn();
-    try {
-      await port.open(opts);
-      state.port = port;
-      state.writer = port.writable.getWriter();
-      state.connected = true;
-      state.busy = false;
-      state.lastPort = port;
-      const _ports = state.grantedPorts || [];
-      state.lastPortName = portName(port, _ports.indexOf(port));
-      S.lastPortName = state.lastPortName; Store.save();
-      setStatus(true, portName(port));
-      updateConnectBtn();
-      viewAddSys('已连接 ' + portName(port) + ' @ ' + opts.baudRate + ' ' + opts.dataBits + 'N' + (opts.stopBits === 2 ? '2' : '1') + (opts.parity !== 'none' ? opts.parity.toUpperCase() : '') + (opts.flowControl === 'hardware' ? ' RTS/CTS' : ''));
-      AutoLog.start(state.lastPortName);
-      this.readLoop(port);
-      return true;
-    } catch (e) {
-      state.busy = false;
-      toast('连接失败：' + e.message, 'err');
-      updateConnectBtn();
-      return false;
-    }
-  },
-  async readLoop(port) {
-    const enc = S.encoding === 'latin1' ? 'windows-1252' : S.encoding;
-    if (!liveDecoder || liveEncoding !== enc) {
-      liveDecoder = new TextDecoder(enc, { fatal: false });
-      liveEncoding = enc;
-    }
-    const decoder = liveDecoder;
-    let reader = null;
-    try {
-      while (state.port === port && port.readable) {
-        reader = port.readable.getReader();
-        state.reader = reader;
-        let streamEnded = false;
-        try {
-          for (;;) {
-            const { value, done } = await reader.read();
-            if (done) { streamEnded = true; break; }
-            if (state.port !== port) break;
-            state.rx += value.length;
-            updateCounters();
-            onBytes(new Uint8Array(value), decoder);
-          }
-        } finally {
-          try { reader.releaseLock(); } catch (e) {}
-          state.reader = null;
-        }
-        if (streamEnded && state.port === port) {
-          onDisconnected('连接已断开（串口流结束）');
-          break;
-        }
-      }
-    } catch (e) {
-      if (state.port === port) {
-        onDisconnected('读取异常：' + (e.message || e.name));
-      }
-    }
-  },
-  async disconnect(quiet) {
-    const port = state.port;
-    if (!port) return;
-    state.port = null;
-    if (state.writer) { try { state.writer.releaseLock(); } catch (e) {} state.writer = null; }
-    if (state.reader) { try { await state.reader.cancel(); } catch (e) {} state.reader = null; }
-    try { await port.close(); } catch (e) {}
-    state.connected = false;
-    AutoLog.stop();
-    setStatus(false);
-    updateConnectBtn();
-    if (!quiet) viewAddSys('已断开连接', true);
-    viewFlushPending();
-  },
-  async send(bytes) {
-    const port = state.port;
-    if (!port || !port.writable) { toast('请先连接串口', 'warn'); return false; }
-    const writer = state.writer;
-    if (!writer) { toast('发送通道未就绪', 'warn'); return false; }
-    try {
-      await writer.write(bytes);
-      state.tx += bytes.length;
-      updateCounters();
-      return true;
-    } catch (e) {
-      toast('发送失败：' + e.message, 'err');
-      if (state.port === port) onDisconnected('写入异常：' + e.message);
-      return false;
-    }
-  }
-};
-function portName(p, idx) {
-  try {
-    const i = p.getInfo();
-    if (i.usbVendorId) return 'USB#' + i.usbVendorId.toString(16) + ':' + i.usbProductId.toString(16);
-  } catch (e) {}
-  return '串口 #' + (idx === undefined || idx < 0 ? '?' : idx + 1);
-}
-
 const View = {
-  el: () => $('#viewer'),
-  _batch: [],
-  _scheduled: false,
-  schedule() {
-    if (this._scheduled) return;
-    this._scheduled = true;
-    requestAnimationFrame(() => this.flush());
+  viewer: null,
+  phantom: null,
+  content: null,
+  _renderScheduled: false,
+  _isUserScrolling: false,
+  _shouldScrollToBottom: false,
+  _frozenScrollTop: -1,
+
+  init() {
+    this.viewer = $('#viewer');
+    this.phantom = $('#viewer-phantom');
+    this.content = $('#viewer-content');
+    
+    this.viewer.addEventListener('scroll', () => {
+      const distanceToBottom = this.viewer.scrollHeight - this.viewer.scrollTop - this.viewer.clientHeight;
+      this._isUserScrolling = distanceToBottom >= 50;
+      this.scheduleRender();
+    });
+
+    // 窗口大小变化：强制重新设置 phantom 高度 + 完整重渲染
+    let resizeTimer = null;
+    window.addEventListener('resize', () => {
+      if (resizeTimer) clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        // 直接设 phantom 高度（不通过 scheduleRender 避免 guard 挡住）
+        const log = this.getFilteredLog();
+        this.phantom.style.height = (log.length * ROW_HEIGHT) + 'px';
+        // 强制一次完整 render（重置 _renderScheduled guard）
+        this._renderScheduled = false;
+        this.render();
+      }, 100);
+    });
   },
-  flush() {
-    this._scheduled = false;
-    const v = this.el();
-    if (this._batch.length) {
-      const frag = document.createDocumentFragment();
-      for (const n of this._batch) frag.appendChild(n);
-      this._batch = [];
-      v.appendChild(frag);
-      this.trim();
-      if (S.autoScroll) v.scrollTop = v.scrollHeight;
+
+  getFilteredLog() {
+    if (!S.filter || !S.filterOnly) return state.log;
+    return state.log.filter(e => entryMatches(e));
+  },
+
+  updateData(forceScrollBottom = false) {
+    const log = this.getFilteredLog();
+    const newHeight = log.length * ROW_HEIGHT;
+
+    // autoScroll=false：先冻住当前 scrollTop，防止 phantom 撑高后被浏览器 scroll anchor 偷偷推高
+    if (!S.autoScroll && !forceScrollBottom) {
+      this._frozenScrollTop = this.viewer.scrollTop;
+    } else {
+      this._frozenScrollTop = -1;
+    }
+
+    this.phantom.style.height = newHeight + 'px';
+
+    // 同步设回（phantom 高度变化会触发浏览器 scroll anchor 推 scrollTop，立刻打回）
+    if (this._frozenScrollTop >= 0 && this._frozenScrollTop !== this.viewer.scrollTop) {
+      this.viewer.scrollTop = this._frozenScrollTop;
+    }
+    
+    if (S.autoScroll || forceScrollBottom) {
+      this._shouldScrollToBottom = true;
+    }
+    this.scheduleRender();
+  },
+
+  scheduleRender() {
+    if (this._renderScheduled) return;
+    this._renderScheduled = true;
+    requestAnimationFrame(() => {
+      this._renderScheduled = false;
+      this.render();
+    });
+  },
+
+  render() {
+    if (state.log.length === 0 && !state.pending) {
+      showEmpty(true);
+      this.content.innerHTML = '';
+      return;
+    }
+    showEmpty(false);
+
+    const log = this.getFilteredLog();
+    if (log.length === 0) {
+      this.content.innerHTML = '<div class="line sys"><span class="msg"><b>无匹配结果</b></span></div>';
+      return;
+    }
+
+    const scrollTop = this.viewer.scrollTop;
+    const clientHeight = this.viewer.clientHeight;
+    
+    let startIdx = Math.floor(scrollTop / ROW_HEIGHT) - BUFFER_ROWS;
+    let endIdx = Math.ceil((scrollTop + clientHeight) / ROW_HEIGHT) + BUFFER_ROWS;
+    
+    startIdx = Math.max(0, startIdx);
+    endIdx = Math.min(log.length, endIdx);
+
+    const parts = [];
+    for (let i = startIdx; i < endIdx; i++) {
+      const e = log[i];
+      const isHexEntry = (S.mode === 'hex' || e.kind === 'hex');
+      const isTx = e.kind === 'tx';
+      let cls = 'line ' + (isHexEntry ? 'hexline' : 'txtline') + (isTx ? ' txline' : '') + (e.kind === 'sys' ? ' sys' : '') + (e.kind === 'sysErr' ? ' sys err' : '');
+      
+      let html = `<div class="${cls}" style="height:${ROW_HEIGHT}px;">`;
+      if (S.showTs) html += '<span class="ts">' + e.t + '</span>';
+      
+      let body = (isHexEntry ? e.hex : e.ascii);
+      let displayHtml = highlight(escapeHtml(body), S.filter, S.caseSensitive);
+      
+      html += `<span class="msg" title="${escapeHtml(body)}">`;
+      if (isTx) html += '<span class="dir">→</span> ';
+      html += displayHtml + '</span></div>';
+      parts.push(html);
+    }
+
+    this.content.innerHTML = parts.join('');
+    this.content.style.transform = `translateY(${startIdx * ROW_HEIGHT}px)`;
+
+    // 处理末尾的 pending 行
+    let existingPending = this.content.querySelector('.pending');
+    if (existingPending) existingPending.remove();
+
+    if (state.pending && S.mode === 'ascii' && !state.paused) {
+      const pendingDiv = document.createElement('div');
+      pendingDiv.className = 'line pending';
+      pendingDiv.style.position = 'absolute';
+      pendingDiv.style.bottom = '-24px';
+      pendingDiv.style.width = '100%';
+      
+      // 防止超长 pending 文本卡死 DOM
+      let pText = state.pending;
+      if (pText.length > 2000) pText = '...' + pText.slice(-2000); 
+      
+      const msgContent = highlight(escapeHtml(pText), S.filter, S.caseSensitive) || '&nbsp;';
+      pendingDiv.innerHTML = (S.showTs ? '<span class="ts">' + fmtTime() + '</span>' : '') + '<span class="msg">' + msgContent + '</span>';
+      
+      this.content.appendChild(pendingDiv);
+    }
+
+    if (this._shouldScrollToBottom) {
+      this._shouldScrollToBottom = false;
+      this.viewer.scrollTop = this.viewer.scrollHeight;
     }
   },
-  trim() {
-    const v = this.el();
-    while (v.children.length > MAX_LINES) v.removeChild(v.firstChild);
-  },
-  add(html, cls) {
-    const div = document.createElement('div');
-    div.className = 'line ' + (cls || '');
-    div.innerHTML = html;
-    this._batch.push(div);
-    this.schedule();
-  },
+
   clear() {
-    const v = this.el();
-    v.querySelectorAll('.line').forEach((n) => n.remove());
-    if (!v.querySelector('#empty-state')) {
-      v.insertAdjacentHTML('afterbegin', EMPTY_STATE_HTML);
-    }
-    state.pending = ''; state.pendingBytes = []; state.pendingEl = null; state.log = [];
+    // 1. 杀掉所有可能残留的异步任务
+    Batch._queue = [];
+    if (Batch._raf) { cancelAnimationFrame(Batch._raf); Batch._raf = null; }
+    if (state.hexFlushTimer) { clearTimeout(state.hexFlushTimer); state.hexFlushTimer = null; }
+
+    // 2. 重置数据（保留 paused 状态，只清暂停缓存）
+    state.pending = ''; state.pendingBytes = []; state.log = [];
     state.pausedBuf = []; state.pausedBytes = 0;
     updatePauseBanner();
     state.rx = 0; state.tx = 0; lastRx = 0;
     updateCounters();
+
+    // 3. 重置 View 内部状态
+    this._isUserScrolling = false;
+    this._shouldScrollToBottom = false;
+    this._frozenScrollTop = -1;
+    this._renderScheduled = false;
+    this.viewer.scrollTop = 0;
+    this.content.style.transform = 'translateY(0px)';
+    this.phantom.style.height = '0px';
     showEmpty(true);
-  },
-  scrollBottom() { const v = this.el(); v.scrollTop = v.scrollHeight; }
+
+    // 4. 最后触发一次渲染
+    this.scheduleRender();
+  }
 };
+
 function showEmpty(on) { const e = $('#empty-state'); if (e) e.style.display = on ? '' : 'none'; }
 
 function highlight(escaped, kw, caseSensitive) {
@@ -834,16 +841,36 @@ function highlight(escaped, kw, caseSensitive) {
   } catch (e) { return escaped; }
 }
 
+// 数据接收核心逻辑：只管塞进 Batch 队列
 function onBytes(bytes, decoder) {
   showEmpty(false);
   const isHex = S.mode === 'hex';
+  
   if (isHex) {
     for (const b of bytes) {
       state.pendingBytes.push(b);
-      if (state.pendingBytes.length >= HEX_COL) flushHexLine();
+      if (state.pendingBytes.length >= HEX_COL) {
+        const chunk = state.pendingBytes.splice(0, HEX_COL);
+        const hex = hexStr(chunk);
+        const asc = Array.from(chunk).map((b) => (b >= 32 && b <= 126 ? String.fromCharCode(b) : '.')).join('');
+        Batch.add({ kind: 'hex', t: fmtTime(), ascii: asc, hex: hex + '  |' + asc + '|' });
+      }
     }
-    scheduleHexFlush();
+    if (state.pendingBytes.length && !state.hexFlushTimer) {
+      state.hexFlushTimer = setTimeout(() => {
+        state.hexFlushTimer = null;
+        if (state.pendingBytes.length) {
+          const chunk = state.pendingBytes.splice(0, HEX_COL);
+          const hex = hexStr(chunk);
+          const asc = Array.from(chunk).map((b) => (b >= 32 && b <= 126 ? String.fromCharCode(b) : '.')).join('');
+          Batch.add({ kind: 'hex', t: fmtTime(), ascii: asc, hex: hex + '  |' + asc + '|' });
+          View.updateData();
+        }
+      }, 300);
+    }
+    return;
   }
+
   let text = decoder.decode(bytes, { stream: true });
   if (text) {
     if (text.indexOf('\uFEFF') !== -1) text = text.replace(/\uFEFF/g, '');
@@ -852,51 +879,13 @@ function onBytes(bytes, decoder) {
     while ((idx = state.pending.indexOf('\n')) >= 0) {
       const line = state.pending.slice(0, idx);
       state.pending = state.pending.slice(idx + 1);
-      if (isHex) Alarm.check(line);
-      else handleLine(line);
+      
+      if (S.showTs && line.trim() === '') continue;
+      
+      Batch.add({ kind: 'txt', t: fmtTime(), ascii: line, hex: hexStr(new TextEncoder().encode(line)) });
     }
-    if (!isHex) updatePendingLine();
+    View.scheduleRender();
   }
-}
-function scheduleHexFlush() {
-  if (S.mode === 'hex' && state.pendingBytes.length && !state.hexFlushTimer) {
-    state.hexFlushTimer = setTimeout(() => {
-      state.hexFlushTimer = null;
-      if (state.pendingBytes.length) flushHexLine();
-    }, 300);
-  }
-}
-
-function flushHexLine() {
-  const bytes = state.pendingBytes.splice(0, HEX_COL);
-  if (!bytes.length) return;
-  const hex = hexStr(bytes);
-  const asc = Array.from(bytes).map((b) => (b >= 32 && b <= 126 ? String.fromCharCode(b) : '.')).join('');
-  const t = fmtTime();
-  const hexDisplay = hex + '  |' + asc + '|';
-  state.log.push({ kind: 'hex', t, ascii: asc, hex: hexDisplay });
-  if (state.log.length > MAX_LOG) state.log.splice(0, state.log.length - MAX_LOG);
-  AutoLog.push({ kind: 'hex', t, ascii: asc, hex: hexDisplay });
-  if (S.filter && S.filterOnly && !entryMatches({ ascii: asc, hex: hexDisplay })) return;
-  const content = highlight(escapeHtml(hex), S.filter, S.caseSensitive)
-    + '  <span class="asc">|' + highlight(escapeHtml(asc), S.filter, S.caseSensitive) + '|</span>';
-  pushLineOrPause(t, content, 'hexline');
-}
-
-// 修复点：增加空行过滤
-function handleLine(line) {
-  const t = fmtTime();
-  const entry = { kind: 'txt', t, ascii: line, hex: hexStr(new TextEncoder().encode(line)) };
-  state.log.push(entry);
-  if (state.log.length > MAX_LOG) state.log.splice(0, state.log.length - MAX_LOG);
-  AutoLog.push(entry);
-  Alarm.check(line);
-  if (S.filter && S.filterOnly && !lineIncludes(line)) return;
-  
-  // 修复：如果是纯空行，且开启了时间戳，则不渲染，防止把时间戳撑开导致显示空行
-  if (S.showTs && line.trim() === '') return;
-
-  pushLineOrPause(t, highlight(escapeHtml(line), S.filter, S.caseSensitive), 'txtline');
 }
 
 function viewAddTx(text, bytes) {
@@ -904,113 +893,23 @@ function viewAddTx(text, bytes) {
   const t = fmtTime();
   const asc = Array.from(bytes).map((b) => (b >= 32 && b <= 126 ? String.fromCharCode(b) : '.')).join('');
   const hexDisplay = hexStr(bytes) + '  |' + asc + '|';
-  const entry = { kind: 'tx', t, ascii: text, hex: hexDisplay };
-  state.log.push(entry);
-  if (state.log.length > MAX_LOG) state.log.splice(0, state.log.length - MAX_LOG);
-  AutoLog.push(entry);
-  if (S.filter && S.filterOnly && !entryMatches(entry)) return;
-  let content = '<span class="dir">→</span> ';
-  if (S.mode === 'hex') {
-    content += highlight(escapeHtml(hexStr(bytes)), S.filter, S.caseSensitive)
-      + '  <span class="asc">|' + highlight(escapeHtml(asc), S.filter, S.caseSensitive) + '|</span>';
-  } else {
-    content += highlight(escapeHtml(text), S.filter, S.caseSensitive);
-  }
-  pushLineOrPause(t, content, 'txline');
+  
+  Batch.add({ kind: 'tx', t, ascii: text, hex: hexDisplay });
+  Batch.flush(); // 发送后立刻刷出，不等 rAF
+  View.updateData(true);
 }
 
-function lineIncludes(text) {
-  const kw = S.filter;
-  if (!kw) return true;
-  return S.caseSensitive ? text.includes(kw) : text.toLowerCase().includes(kw.toLowerCase());
-}
-function pushLineOrPause(t, contentHtml, cls) {
-  if (state.paused) {
-    state.pausedBuf.push({ t, contentHtml, cls });
-    state.pausedBytes += contentHtml.length;
-    updatePauseBanner();
-    return;
-  }
-  let html = '';
-  if (S.showTs) html += '<span class="ts">' + t + '</span>';
-  html += '<span class="msg">' + contentHtml + '</span>';
-  View.add(html, cls);
+function viewAddSys(msg, isErr) {
+  Batch.add({ kind: isErr ? 'sysErr' : 'sys', t: fmtTime(), ascii: msg, hex: '' });
+  Batch.flush();
+  View.updateData(true);
 }
 
-let pendingScheduled = false;
-function updatePendingLine() {
-  if (S.mode !== 'ascii') return;
-  if (state.paused) { updatePauseBanner(); return; }
-  if (!state.pending && !state.pendingEl) return;
-  if (pendingScheduled) return;
-  pendingScheduled = true;
-  requestAnimationFrame(() => {
-    pendingScheduled = false;
-    if (!state.pending) {
-      if (state.pendingEl) { state.pendingEl.remove(); state.pendingEl = null; }
-      return;
-    }
-    if (!state.pendingEl) {
-      const div = document.createElement('div');
-      div.className = 'line pending';
-      View.el().appendChild(div);
-      state.pendingEl = div;
-    }
-    const msgContent = highlight(escapeHtml(state.pending), S.filter, S.caseSensitive) || '&nbsp;';
-    const html = (S.showTs ? '<span class="ts">' + fmtTime() + '</span>' : '') + '<span class="msg">' + msgContent + '</span>';
-    state.pendingEl.innerHTML = html;
-  });
-}
-function viewFlushPending() {
-  pendingScheduled = false;
-  if (state.hexFlushTimer) { clearTimeout(state.hexFlushTimer); state.hexFlushTimer = null; }
-  if (state.pending && !state.paused) handleLine(state.pending);
-  state.pending = '';
-  if (state.pendingEl) { state.pendingEl.remove(); state.pendingEl = null; }
-  if (S.mode === 'hex' && state.pendingBytes.length) flushHexLine();
-}
 function entryMatches(e) {
   const kw = S.filter;
   if (!kw) return true;
   const text = (S.mode === 'hex' || e.kind === 'hex') ? e.hex : e.ascii;
   return S.caseSensitive ? text.includes(kw) : text.toLowerCase().includes(kw.toLowerCase());
-}
-function rebuildView() {
-  const v = View.el();
-  v.innerHTML = '';
-  state.pendingEl = null;
-  if (S.mode === 'hex' && state.pendingBytes.length) flushHexLine();
-  const log = state.log;
-  if (!log.length) { showEmpty(false); if (state.pending) updatePendingLine(); return; }
-  showEmpty(false);
-  const start = Math.max(0, log.length - MAX_LINES);
-  const parts = [];
-  for (let i = start; i < log.length; i++) {
-    const e = log[i];
-    if (S.filterOnly && !entryMatches(e)) continue;
-    
-    // 修复：渲染历史记录时，如果是空行，且开启时间戳，则跳过渲染
-    if (S.showTs && e.kind !== 'hex' && e.kind !== 'tx' && e.ascii.trim() === '') continue;
-
-    const isHexEntry = (S.mode === 'hex' || e.kind === 'hex');
-    const isTx = e.kind === 'tx';
-    let html = '<div class="line ' + (isHexEntry ? 'hexline' : 'txtline') + (isTx ? ' txline' : '') + '">';
-    if (S.showTs) html += '<span class="ts">' + e.t + '</span>';
-    html += '<span class="msg">';
-    if (isTx) html += '<span class="dir">→</span> ';
-    html += highlight(escapeHtml(isHexEntry ? e.hex : e.ascii), S.filter, S.caseSensitive);
-    html += '</span></div>';
-    parts.push(html);
-  }
-  v.innerHTML = parts.join('');
-  if (S.autoScroll) v.scrollTop = v.scrollHeight;
-  if (state.pending && S.mode !== 'hex' && !state.paused) updatePendingLine();
-}
-
-function viewAddSys(msg, isErr) {
-  const html = (S.showTs ? '<span class="ts">' + fmtTime() + '</span>' : '') + '<span class="msg"><b>' + escapeHtml(msg) + '</b></span>';
-  View.add(html, isErr ? 'sys err' : 'sys');
-  View.flush();
 }
 
 function setPaused(on) {
@@ -1018,12 +917,33 @@ function setPaused(on) {
   $('#chk-pause').checked = on;
   updatePauseBanner();
   if (!on) {
-    viewFlushPending();
-    for (const it of state.pausedBuf) pushLineOrPause(it.t, it.contentHtml, it.cls);
+    // 恢复暂停：先清空 Batch 残留队列，确保 pausedBuf 倒回后的数据不被旧 flush 覆盖
+    if (Batch._queue.length) {
+      // 如果有排队的旧数据（暂停瞬间 add 的），也一起并入 pausedBuf 再统一倒回
+      for (const e of Batch._queue) state.pausedBuf.push(e);
+      Batch._queue = [];
+      if (Batch._raf) { cancelAnimationFrame(Batch._raf); Batch._raf = null; }
+    }
+
+    if (state.pending && S.mode !== 'hex') {
+      state.pausedBuf.push({ kind: 'txt', t: fmtTime(), ascii: state.pending, hex: hexStr(new TextEncoder().encode(state.pending)) });
+      state.pending = '';
+    }
+    if (state.hexFlushTimer) { clearTimeout(state.hexFlushTimer); state.hexFlushTimer = null; }
+
+    // pausedBuf 全部倒入 state.log
+    for (const it of state.pausedBuf) state.log.push(it);
     state.pausedBuf = []; state.pausedBytes = 0;
     updatePauseBanner();
+
+    // 重置 View 内部状态（暂停期间用户可能滚动过，_isUserScrolling 可能为 true）
+    View._isUserScrolling = false;
+    View._shouldScrollToBottom = true;
+    View._renderScheduled = false;
+    View.scheduleRender();
   }
 }
+
 function updatePauseBanner() {
   const b = $('#pause-banner');
   if (state.paused) {
@@ -1070,133 +990,200 @@ function beep() {
   } catch (e) {}
 }
 
-function setStatus(connected, name) {
-  const dot = $('#st-dot'), txt = $('#st-text');
-  dot.className = 'dot ' + (connected ? 'on' : 'err');
-  txt.className = connected ? 'on' : 'err';
-  txt.textContent = connected ? '已连接 ' + name : '未连接';
-  $('#st-params').textContent = connected ? ('RX ' + fmtBytes(state.rx) + ' / TX ' + fmtBytes(state.tx)) : '';
-}
-function updateCounters() {
-  $('#st-rx').textContent = fmtBytes(state.rx);
-  $('#st-tx').textContent = fmtBytes(state.tx);
-  if (state.connected) $('#st-params').textContent = '';
-}
-function onDisconnected(msg) {
-  state.connected = false;
-  state.busy = false;
-  state.port = null;
-  if (state.writer) { try { state.writer.releaseLock(); } catch (e) {} state.writer = null; }
-  AutoLog.stop();
-  setStatus(false);
-  updateConnectBtn();
-  viewAddSys(msg, true);
-  toast(msg, 'err');
-}
-function updateConnectBtn() {
-  const b = $('#btn-connect');
-  if (state.busy) { b.disabled = true; b.textContent = '连接中…'; b.className = 'btn primary'; return; }
-  b.disabled = false;
-  if (state.connected) {
-    b.textContent = '断开';
-    b.className = 'btn primary connected';
-  } else if (state.lastPort) {
-    b.textContent = '重连';
-    b.className = 'btn primary';
-  } else {
-    b.textContent = '连接';
-    b.className = 'btn primary';
+// 以下为 Serial 逻辑及 UI 绑定... (保持原有逻辑，只需确认 onBytes 被替换)
+const Serial = {
+  async ensure() { if (!navigator.serial) throw new Error('当前浏览器不支持 Web Serial API'); },
+  async refreshPorts(selectName) {
+    try {
+      await this.ensure();
+      const ports = await navigator.serial.getPorts();
+      const sel = $('#sel-port');
+      sel.innerHTML = '';
+      if (!ports.length) {
+        sel.innerHTML = '<option value="">未授权端口，请点击选择…</option>';
+      } else {
+        ports.forEach((p, i) => {
+          const o = document.createElement('option');
+          o.value = String(i);
+          o.textContent = portName(p, i);
+          sel.appendChild(o);
+        });
+        if (selectName) {
+          const idx = ports.findIndex((p) => portName(p) === selectName);
+          if (idx >= 0) sel.value = String(idx);
+        }
+      }
+      state.grantedPorts = ports;
+    } catch (e) { toast('刷新端口失败：' + errZh(e), 'err'); }
+  },
+  async pickPort() {
+    await this.ensure();
+    try {
+      const port = await navigator.serial.requestPort();
+      state.lastPort = port;
+      state.lastPortName = portName(port);
+      S.lastPortName = state.lastPortName; Store.save();
+      await this.refreshPorts(state.lastPortName);
+      return port;
+    } catch (e) { 
+      state.lastPort = null;
+      state.lastPortName = '';
+      return null; 
+    }
+  },
+  getOpts() { return { baudRate: Number(S.baud), dataBits: Number(S.dataBits), stopBits: Number(S.stopBits), parity: S.parity, flowControl: S.flowControl }; },
+  async connect(port, opts) {
+    state.busy = true; updateConnectBtn();
+    try {
+      await port.open(opts);
+      state.port = port;
+      state.writer = port.writable.getWriter();
+      state.connected = true;
+      state.busy = false;
+      state.lastPort = port;
+      state.lastPortName = portName(port);
+      setStatus(true, state.lastPortName);
+      updateConnectBtn();
+      viewAddSys('已连接 ' + state.lastPortName + ' @ ' + opts.baudRate);
+      AutoLog.start();
+      this.readLoop(port);
+      return true;
+    } catch (e) {
+      state.busy = false;
+      updateConnectBtn();
+      setStatus(false, errZh(e)); // 状态栏报错
+      toast('连接失败：' + errZh(e), 'err');
+      return false;
+    }
+  },
+  async readLoop(port) {
+    const enc = S.encoding === 'latin1' ? 'windows-1252' : S.encoding;
+    if (!liveDecoder || liveEncoding !== enc) {
+      liveDecoder = new TextDecoder(enc, { fatal: false });
+      liveEncoding = enc;
+    }
+    let reader = null;
+    try {
+      while (state.port === port && port.readable) {
+        reader = port.readable.getReader();
+        state.reader = reader;
+        let streamEnded = false;
+        try {
+          for (;;) {
+            const { value, done } = await reader.read();
+            if (done) { streamEnded = true; break; }
+            if (state.port !== port) break;
+            state.rx += value.length;
+            updateCounters();
+            onBytes(new Uint8Array(value), liveDecoder);
+          }
+        } finally {
+          try { reader.releaseLock(); } catch (e) {}
+          state.reader = null;
+        }
+        if (streamEnded && state.port === port) {
+          onDisconnected('连接已断开（串口流结束）');
+          break;
+        }
+      }
+    } catch (e) {
+      if (state.port === port) onDisconnected('读取异常：' + errZh(e));
+    }
+  },
+  async disconnect(quiet) {
+    const port = state.port;
+    if (!port) return;
+    state.port = null;
+    if (state.writer) { try { state.writer.releaseLock(); } catch (e) {} state.writer = null; }
+    if (state.reader) { try { await state.reader.cancel(); } catch (e) {} state.reader = null; }
+    try { await port.close(); } catch (e) {}
+    state.connected = false;
+    await AutoLog.stop();
+    setStatus(false);
+    updateConnectBtn();
+    if (!quiet) viewAddSys('已断开连接', true);
+  },
+  async send(bytes) {
+    const port = state.port;
+    if (!port || !port.writable) { toast('请先连接串口', 'warn'); return false; }
+    const writer = state.writer;
+    if (!writer) { toast('发送通道未就绪', 'warn'); return false; }
+    try {
+      await writer.write(bytes);
+      state.tx += bytes.length;
+      updateCounters();
+      return true;
+    } catch (e) {
+      toast('发送失败：' + errZh(e), 'err');
+      if (state.port === port) onDisconnected('写入异常：' + errZh(e));
+      return false;
+    }
   }
+};
+function portName(p, idx) {
+  try {
+    const i = p.getInfo();
+    if (i.usbVendorId) return 'USB#' + i.usbVendorId.toString(16) + ':' + i.usbProductId.toString(16);
+  } catch (e) {}
+  return '串口 #' + (idx === undefined || idx < 0 ? '?' : idx + 1);
 }
 
 const AutoLog = {
-  on: false,
-  dir: null,
-  mode: 'none',
-  base: '', seg: 0, fh: null, writer: null,
-  buf: [], bufBytes: 0, _downloadBuf: '',
-  limit: 2 * 1024 * 1024,
-  timer: null, rotBusy: false,
-  sanitize(name) { return String(name || 'serial').replace(/[\\/:*?"<>|]/g, '_').slice(0, 40); },
-  async pickDir() {
-    try {
-      if (!window.showDirectoryPicker) throw new Error('当前浏览器不支持选择目录（将保存到下载目录）');
-      const dir = await window.showDirectoryPicker();
-      this.dir = dir;
-      toast('自动保存目录已设置', 'ok');
-    } catch (e) {
-      if (e.name === 'AbortError') return;
-      this.dir = null;
-      toast('无法选择目录（将保存到浏览器下载目录）：' + e.message, 'warn');
-    }
-    this.updateStatus();
-  },
-  start(portName) {
+  on: false, mode: 'none',
+  _downloadBuf: '',
+  timer: null, _baseTs: 0, _seg: 0,
+
+  start() {
     if (!this.on) return;
-    const ts = fmtFileTime();
-    this.base = this.sanitize(portName) + '_' + ts;
-    this.seg = 0; this.buf = []; this.bufBytes = 0; this._downloadBuf = '';
-    this.mode = this.dir ? 'file' : 'download';
+    this.mode = 'download';
+    this._downloadBuf = '';
+    this._seg = 0;
+    this._baseTs = Date.now();
+
     const head = [
-      '# Serial Listener 自动日志',
-      '# 端口: ' + (portName || '-') + '  参数: ' + S.baud + ' ' + S.dataBits + 'N' + (S.stopBits === 2 ? '2' : '1') + '  编码: ' + S.encoding,
-      '# 开始: ' + new Date().toLocaleString('zh-CN') + '  模式: ' + (this.mode === 'file' ? '指定目录' : '浏览器下载目录'),
-      '# TX 行以 → 标记',
-      '#'
+      '# 串口侦听器 - 自动日志',
+      '# 开始: ' + new Date().toLocaleString('zh-CN'),
+      '# TX 行以 → 标记', '#'
     ].join('\r\n') + '\r\n';
-    this.buf.push(head); this.bufBytes += head.length;
-    this.openSegment().catch((e) => toast('自动日志创建失败：' + e.message, 'err'));
-    this.timer = setInterval(() => this.flush(), 2000);
+    this._downloadBuf += head;
+
+    this.timer = setInterval(() => { this.flush(); this.updateStatus(); }, 2000);
     this.updateStatus();
   },
-  async openSegment() {
-    if (this.mode !== 'file' || !this.dir) { this.writer = null; return; }
-    this.fh = await this.dir.getFileHandle(this._fname(), { create: true });
-    this.writer = await this.fh.createWritable();
+
+  _fname() {
+    const t = new Date(this._baseTs);
+    const base = t.getFullYear() + '-' + pad(t.getMonth() + 1) + '-' + pad(t.getDate()) + '_'
+               + pad(t.getHours()) + '-' + pad(t.getMinutes()) + '-' + pad(t.getSeconds());
+    return base + (this._seg > 0 ? '_' + pad(this._seg, 3) : '') + '.log';
   },
-  _fname() { return this.base + (this.seg > 0 ? '_' + pad(this.seg, 3) : '') + '.log'; },
+
   _line(e) {
     const body = (S.mode === 'hex' || e.kind === 'hex') ? e.hex : e.ascii;
     return e.t + '  ' + (e.kind === 'tx' ? '→ ' : '') + body + '\r\n';
   },
+
   push(e) {
     if (!this.on || this.mode === 'none') return;
-    const line = this._line(e);
-    this.buf.push(line); this.bufBytes += line.length;
-    if (this.bufBytes >= this.limit) this.scheduleRotate();
+    this._downloadBuf += this._line(e);
+
+    const maxLimit = (S.logLimitMB || 2) * 1024 * 1024; 
+    if (this._downloadBuf.length >= maxLimit) this._rotate();
   },
-  scheduleRotate() {
-    if (this.rotBusy) return;
-    this.rotBusy = true;
-    setTimeout(async () => {
-      try { await this.rotate(); } finally { this.rotBusy = false; }
-    }, 0);
-  },
-  async rotate() {
-    if (this.mode === 'none') return;
-    await this.flush();
-    if (this.mode === 'file' && this.writer) { try { await this.writer.close(); } catch (e) {} this.writer = null; }
-    else this.downloadSegment();
-    this.seg++;
-    this.buf = []; this.bufBytes = 0;
-    try { await this.openSegment(); } catch (e) { toast('自动日志轮转失败：' + e.message, 'err'); }
-    this.updateStatus();
-  },
-  async flush() {
-    if (!this.buf.length) return;
-    const text = this.buf.join('');
-    if (this.mode === 'file') {
-      if (!this.writer) return;
-      try {
-        await this.writer.write(text);
-        this.buf = []; this.bufBytes = 0;
-      } catch (e) { toast('自动日志写入失败：' + e.message, 'err'); }
-    } else if (this.mode === 'download') {
-      this._downloadBuf += text;
-      this.buf = []; this.bufBytes = 0;
+
+  _rotate() {
+    if (this._downloadBuf) {
+      this._triggerDownload();
     }
+    this._seg++;
   },
-  downloadSegment() {
+
+  async flush() {
+    // download 模式数据一直在 _downloadBuf 里积累，不需要中间 flush
+    // 这里只是个 placeholder，防止并发访问问题
+  },
+
+  _triggerDownload() {
     if (!this._downloadBuf) return;
     const blob = new Blob([this._downloadBuf], { type: 'text/plain;charset=utf-8' });
     this._downloadBuf = '';
@@ -1206,23 +1193,20 @@ const AutoLog = {
     document.body.appendChild(a); a.click();
     setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
   },
+
   async stop() {
     if (this.timer) { clearInterval(this.timer); this.timer = null; }
     if (this.mode === 'none') { this.updateStatus(); return; }
-    try {
-      await this.flush();
-      if (this.mode === 'file' && this.writer) { try { await this.writer.close(); } catch (e) {} this.writer = null; }
-      else if (this.mode === 'download') this.downloadSegment();
-    } catch (e) {}
-    this.mode = 'none'; this.seg = 0; this.base = ''; this.buf = []; this.bufBytes = 0;
+    if (this._downloadBuf) { this._triggerDownload(); }
+    this.mode = 'none';
     this.updateStatus();
   },
+
   updateStatus() {
     const el = $('#st-autolog');
     if (!el) return;
     if (!this.on) { el.textContent = ''; el.className = 'st-autolog'; return; }
-    if (this.mode === 'file') { el.textContent = '保存中: ' + this._fname(); el.className = 'st-autolog on'; }
-    else if (this.mode === 'download') { el.textContent = '保存中: 下载目录'; el.className = 'st-autolog dl'; }
+    if (this.mode === 'download') { el.textContent = '保存中: ' + (this._downloadBuf.length > 0 ? fmtBytes(this._downloadBuf.length) : ''); el.className = 'st-autolog dl'; }
     else { el.textContent = '待连接'; el.className = 'st-autolog'; }
   }
 };
@@ -1291,30 +1275,25 @@ function renderQuickSends() {
   });
 }
 
-// 修改：只导出当前界面上能看到的内容为 txt
 function exportLog() {
   if (!state.log.length) { toast('没有可导出的数据', 'warn'); return; }
   
   const lines = state.log.map((e) => { 
-    // 遵循当前的过滤规则
     if (S.filterOnly && S.filter && !entryMatches(e)) return null;
-    
-    // 遵循界面的空行隐藏规则
     if (S.showTs && e.kind !== 'hex' && e.kind !== 'tx' && e.ascii.trim() === '') return null;
 
-    const body = (S.mode === 'hex' || e.kind === 'hex') ? e.hex : e.ascii;
+    let rawBody = (S.mode === 'hex' || e.kind === 'hex') ? e.hex : e.ascii;
+    rawBody = rawBody.replace(/\t/g, '    ').replace(/ {2,}/g, '\t');
+
     const ts = S.showTs ? e.t + ' ' : '';
     const dir = (e.kind === 'tx' ? '→ ' : '');
-    
-    return ts + dir + body;
-  }).filter(Boolean); // 移除 null 项
+    return ts + dir + rawBody;
+  }).filter(Boolean); 
 
   const content = lines.join('\r\n');
   const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  
-  // 默认文件名为当前时间 YYYY-MM-DD_HH-mm-ss.txt
   a.download = fmtFileTime() + '.txt'; 
   
   document.body.appendChild(a);
@@ -1350,6 +1329,7 @@ function applySettingsToUI() {
   $('#in-filter').value = S.filter;
   $('#in-alarm').value = S.alarmWords;
   $('#chk-alarm').checked = S.alarmOn;
+  $('#sel-logsize').value = String(S.logLimitMB || 2);
   $('#chk-autolog').checked = !!S.autoLog;
   AutoLog.on = !!S.autoLog;
   $('#sel-sendmode').value = S.sendMode;
@@ -1374,8 +1354,7 @@ function bindUI() {
     if (S.mode === b.dataset.mode) return;
     S.mode = b.dataset.mode; Store.save();
     $$('#seg-mode button').forEach((x) => x.classList.toggle('on', x.dataset.mode === S.mode));
-    viewFlushPending();
-    rebuildView();
+    View.updateData();
     toast('显示模式：' + (S.mode === 'hex' ? 'HEX' : '文本'), 'info', 1200);
   }));
   $('#sel-baud').addEventListener('change', () => {
@@ -1394,24 +1373,31 @@ function bindUI() {
   bindSel('#sel-parity', 'parity', '校验');
   bindSel('#sel-flow', 'flowControl', '流控');
   bindSel('#sel-enc', 'encoding', '编码');
-  $('#chk-ts').addEventListener('change', () => { S.showTs = $('#chk-ts').checked; document.body.classList.toggle('ts-off', !S.showTs); rebuildView(); Store.save(); });
-  $('#chk-scroll').addEventListener('change', () => { S.autoScroll = $('#chk-scroll').checked; if (S.autoScroll) View.scrollBottom(); Store.save(); });
+  $('#chk-ts').addEventListener('change', () => { S.showTs = $('#chk-ts').checked; document.body.classList.toggle('ts-off', !S.showTs); View.updateData(); Store.save(); });
+  $('#chk-scroll').addEventListener('change', () => { S.autoScroll = $('#chk-scroll').checked; if (S.autoScroll) { View.viewer.scrollTop = View.viewer.scrollHeight; } Store.save(); });
   $('#chk-pause').addEventListener('change', () => setPaused($('#chk-pause').checked));
   $('#btn-clear').addEventListener('click', () => { View.clear(); toast('已清空', 'info', 1200); });
   $('#viewer-wrap').addEventListener('click', (e) => { if (state.paused && e.target.id === 'pause-banner') setPaused(false); });
+  
+  $('#sel-logsize').addEventListener('change', (e) => {
+    S.logLimitMB = Number(e.target.value);
+    Store.save();
+    toast('单个日志文件上限已设为：' + S.logLimitMB + ' MB', 'info', 1500);
+  });
+
   let filterTimer = null;
   $('#in-filter').addEventListener('input', () => {
     clearTimeout(filterTimer);
     filterTimer = setTimeout(() => {
       S.filter = $('#in-filter').value.trim();
       $('#in-filter').classList.toggle('active', !!S.filter);
-      rebuildView();
+      View.updateData();
       Store.save();
       toast(S.filter ? '过滤已应用' : '过滤已清除', 'info', 1000);
     }, 350);
   });
-  $('#btn-case').addEventListener('click', () => { S.caseSensitive = !S.caseSensitive; $('#btn-case').classList.toggle('accent', S.caseSensitive); rebuildView(); Store.save(); toast('大小写匹配：' + (S.caseSensitive ? '开' : '关'), 'info', 1200); });
-  $('#btn-filteronly').addEventListener('click', () => { S.filterOnly = !S.filterOnly; $('#btn-filteronly').classList.toggle('accent', S.filterOnly); rebuildView(); Store.save(); toast('仅显示匹配行：' + (S.filterOnly ? '开' : '关'), 'info', 1200); });
+  $('#btn-case').addEventListener('click', () => { S.caseSensitive = !S.caseSensitive; $('#btn-case').classList.toggle('accent', S.caseSensitive); View.updateData(); Store.save(); toast('大小写匹配：' + (S.caseSensitive ? '开' : '关'), 'info', 1200); });
+  $('#btn-filteronly').addEventListener('click', () => { S.filterOnly = !S.filterOnly; $('#btn-filteronly').classList.toggle('accent', S.filterOnly); View.updateData(); Store.save(); toast('仅显示匹配行：' + (S.filterOnly ? '开' : '关'), 'info', 1200); });
   $('#chk-alarm').addEventListener('change', () => { S.alarmOn = $('#chk-alarm').checked; Store.save(); toast('报警：' + (S.alarmOn ? '开' : '关'), S.alarmOn ? 'ok' : 'info', 1200); });
   let alarmTimer = null;
   $('#in-alarm').addEventListener('input', () => {
@@ -1419,7 +1405,6 @@ function bindUI() {
     alarmTimer = setTimeout(() => { S.alarmWords = $('#in-alarm').value; Alarm.setWords(S.alarmWords); Store.save(); }, 350);
   });
   
-  // 修改：点击按钮触发导出 txt
   $('#btn-export').addEventListener('click', exportLog);
   
   $('#chk-autolog').addEventListener('change', () => {
@@ -1429,8 +1414,16 @@ function bindUI() {
     toast('自动保存日志：' + (S.autoLog ? '开（连接串口后生效）' : '关'), S.autoLog ? 'ok' : 'info', 1500);
     AutoLog.updateStatus();
   });
-  $('#btn-logdir').addEventListener('click', () => AutoLog.pickDir());
-  $('#btn-pick').addEventListener('click', async () => { const p = await Serial.pickPort(); if (p) toast('已选择端口', 'ok'); });
+
+
+  $('#btn-pick').addEventListener('click', async () => { 
+    const p = await Serial.pickPort(); 
+    if (p) {
+      setStatus(false, '已选择，未连接');
+      toast('已选择端口', 'ok'); 
+    }
+  });
+  
   $('#btn-connect').addEventListener('click', onConnectClick);
   $('#btn-send').addEventListener('click', doSend);
   $('#in-send').addEventListener('keydown', (e) => {
@@ -1470,7 +1463,17 @@ async function onConnectClick() {
       port = await Serial.pickPort();
       if (!port) return;
     }
-    await Serial.connect(port, opts);
+    
+    const ok = await Serial.connect(port, opts);
+    if (!ok) {
+      state.lastPort = null;
+      state.lastPortName = '';
+      S.lastPortName = '';
+      Store.save();
+    }
+  } catch(e) {
+    console.error(e);
+    toast('连接异常：' + errZh(e), 'err');
   } finally {
     state.busy = false;
     updateConnectBtn();
@@ -1486,6 +1489,57 @@ function maybeApplyParams(label) {
   }
 }
 
+function setStatus(connected, name) {
+  const dot = $('#st-dot'), txt = $('#st-text');
+  dot.className = 'dot ' + (connected ? 'on' : 'err');
+  txt.className = connected ? 'on' : 'err';
+  
+  if (connected) {
+    txt.textContent = '已连接 ' + name;
+    // 显示串口参数：波特率 / 数据位 / 停止位 / 校验
+    const parityMap = { none: '无', even: '偶', odd: '奇' };
+    const params = S.baud + ' / ' + S.dataBits + S.parity[0].toUpperCase() + S.stopBits;
+    $('#st-params').textContent = '参数: ' + params;
+  } else {
+    if (name) {
+       txt.textContent = '未连接 (' + name + ')';
+    } else {
+       txt.textContent = '未连接';
+    }
+    $('#st-params').textContent = '';
+  }
+}
+function updateCounters() {
+  $('#st-rx').textContent = fmtBytes(state.rx);
+  $('#st-tx').textContent = fmtBytes(state.tx);
+}
+async function onDisconnected(msg) {
+  state.connected = false;
+  state.busy = false;
+  state.port = null;
+  if (state.writer) { try { state.writer.releaseLock(); } catch (e) {} state.writer = null; }
+  await AutoLog.stop();
+  setStatus(false);
+  updateConnectBtn();
+  viewAddSys(msg, true);
+  toast(msg, 'err');
+}
+function updateConnectBtn() {
+  const b = $('#btn-connect');
+  if (state.busy) { b.disabled = true; b.textContent = '连接中…'; b.className = 'btn primary'; return; }
+  b.disabled = false;
+  if (state.connected) {
+    b.textContent = '断开';
+    b.className = 'btn primary connected';
+  } else if (state.lastPort) {
+    b.textContent = '重连';
+    b.className = 'btn primary';
+  } else {
+    b.textContent = '连接';
+    b.className = 'btn primary';
+  }
+}
+
 function tickClock() {
   const d = new Date();
   $('#st-clock').textContent = pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
@@ -1495,6 +1549,7 @@ async function init() {
   populateBaud();
   applySettingsToUI();
   Theme.init();
+  View.init();
   bindUI();
   tickClock();
   setInterval(tickClock, 1000);
@@ -1512,56 +1567,6 @@ async function init() {
     return;
   }
   await Serial.refreshPorts(S.lastPortName);
-  if (TEST_MODE) {
-    window.__test = {
-      feed(bytes) {
-        const port = state.port || (fakeSerial._ports[0]);
-        if (!port) throw new Error('no fake port');
-        if (port._ctrl) port.feed(bytes instanceof Uint8Array ? bytes : new TextEncoder().encode(String(bytes)));
-      },
-      feedBytes(arr) { const p = state.port || fakeSerial._ports[0]; if (p) p.feed(new Uint8Array(arr)); },
-      txBytes() { const p = state.port || fakeSerial._ports[0]; return p ? p.txAll().total : 0; },
-      txAll() { const p = state.port || fakeSerial._ports[0]; return p ? p.txAll() : { bytes: [], total: 0 }; },
-      drop() { const p = state.port || fakeSerial._ports[0]; if (p) p.drop(); },
-      cancelNextPick() { fakeSerial._cancelNext = true; },
-      clearLastPort() { state.lastPort = null; state.lastPortName = ''; },
-      clearHist() { state.cmdHist.length = 0; S.cmdHist = state.cmdHist; },
-      setAutoLogLimit(n) { AutoLog.limit = n; },
-      clearAutoLogDir() { AutoLog.dir = null; },
-      autoLogState() { return { on: AutoLog.on, mode: AutoLog.mode, base: AutoLog.base, seg: AutoLog.seg, bufBytes: AutoLog.bufBytes }; },
-      autoLogFiles() { return window.__autoLogFiles || {}; },
-      installFakeDir() {
-        window.__autoLogFiles = {};
-        window.showDirectoryPicker = async () => ({
-          getFileHandle: async (name) => ({
-            name,
-            createWritable: async () => ({
-              write: (text) => { window.__autoLogFiles[name] = (window.__autoLogFiles[name] || '') + String(text); },
-              close: async () => {}
-            })
-          })
-        });
-        return true;
-      },
-      failNextOpen(msg) { const p = state.port || fakeSerial._ports[0]; if (p) p._failOpen = msg || '模拟打开失败'; },
-      failNextWrite(msg) { const p = state.port || fakeSerial._ports[0]; if (p) p._failWrite = msg || '模拟写入失败'; },
-      setPorts(names) {
-        fakeSerial._ports = names.map((n, i) => new FakePortClass(n, i + 1));
-        try { sessionStorage.setItem('__testPorts', names.join(',')); } catch (e) {}
-        if (state.grantedPorts) state.grantedPorts = fakeSerial._ports;
-        return Serial.refreshPorts();
-      },
-      connect() { return onConnectClick(); },
-      disconnect() { return Serial.disconnect(false); },
-      settings() { return S; },
-      state() { return state; },
-      viewerLines() { return $('#viewer').children.length; },
-      rebuildMs() { const t0 = performance.now(); rebuildView(); return performance.now() - t0; },
-      viewerText() { return $('#viewer').textContent; },
-      log() { return state.log; }
-    };
-    console.log('[test] fake serial ready');
-  }
 }
 init();
 </script>
