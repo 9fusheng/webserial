@@ -284,7 +284,7 @@ body.alarm .viewer-wrap{animation:alarmPulse 1s ease-in-out 3}
 #st-text.on{color:var(--ok)}
 #st-text.err{color:var(--danger)}
 
-#toasts{position:fixed;top:16px;right:16px;z-index:999;display:flex;flex-direction:column;gap:8px;max-width:360px}
+#toasts{position:fixed;top:96px;right:16px;z-index:999;display:flex;flex-direction:column;gap:8px;max-width:360px}
 .toast{
   background:var(--panel3);border:1px solid var(--line2);color:var(--text);
   padding:10px 14px;border-radius:10px;font-size:12.5px;box-shadow:var(--shadow-toast);
@@ -504,7 +504,10 @@ function escapeRe(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
 
 // 把 Web Serial / 浏览器底层英文错误翻译成中文
 function errZh(e) {
-  const msg = (e && e.message) || (e && e.name) || String(e);
+  let msg = (e && e.message) || (e && e.name) || String(e);
+  // 去掉 DOMException 的 "Failed to execute 'open' on 'SerialPort': " 前缀
+  const m = msg.match(/Failed to execute '[^']+' on '[^']+':\s*(.*)/i);
+  if (m && m[1]) msg = m[1];
   const map = [
     [/SecurityError/i, '安全错误：权限被拒绝'],
     [/NotFoundError/i, '未找到设备'],
@@ -514,22 +517,39 @@ function errZh(e) {
     [/NetworkError/i, '网络错误'],
     [/AbortError/i, '操作已取消'],
     [/TypeError/i, '参数类型错误'],
-    [/TypeError: Failed to fetch/i, '网络请求失败'],
-    [/Cannot open serial port/i, '无法打开串口（可能被占用或不存在）'],
-    [/Failed to open port/i, '打开串口失败'],
-    [/Access denied/i, '访问被拒绝'],
-    [/Operation not supported/i, '操作不支持'],
-    [/Port is already open/i, '串口已打开'],
-    [/Device has been removed/i, '设备已被移除'],
+    [/Failed to fetch/i, '网络请求失败'],
+    [/Failed to open (serial )?port/i, '无法打开串口（可能被占用、已断开或无权限）'],
+    [/open serial port/i, '无法打开串口（可能被占用、已断开或无权限）'],
+    [/Cannot open (serial )?port/i, '无法打开串口（可能被占用或不存在）'],
+    [/The port is already open|Port is already open/i, '串口已打开，请勿重复连接'],
+    [/Serial port is not open|port is not open/i, '串口未打开'],
+    [/Device has been removed|The device has been lost|Device is gone/i, '设备已被移除或断开'],
+    [/Access denied|permission denied/i, '访问被拒绝：无串口权限'],
+    [/No port selected|No port specified/i, '未选择串口'],
+    [/Operation not supported|not supported/i, '操作不支持'],
+    [/cancel(led|ed)? by (the )?user|user (cancelled|aborted)/i, '用户取消了操作'],
+    [/buffer size|Buffer size/i, '缓冲区大小参数无效'],
+    [/required member .* is not present/i, '缺少必要的串口参数'],
+    [/is not a valid|Invalid value/i, '参数值无效'],
   ];
   for (const [re, zh] of map) {
     if (re.test(msg)) return zh;
   }
+  // 兜底：仍是纯英文的底层异常，统一提示中文，不把英文暴露给用户
+  if (/^[\x00-\x7F]+$/.test(msg)) return '串口操作失败，请检查设备连接后重试';
   return msg;
 }
 function hexStr(bytes) { return Array.from(bytes).map((b) => b.toString(16).padStart(2, '0').toUpperCase()).join(' '); }
+function repositionToasts() {
+  const box = $('#toasts');
+  const hd = document.querySelector('.topbar');
+  if (!box) return;
+  box.style.top = ((hd ? hd.getBoundingClientRect().bottom : 80) + 12) + 'px';
+}
+
 function toast(msg, type = 'info', ms = 3200) {
   const box = $('#toasts');
+  repositionToasts();
   const el = document.createElement('div');
   el.className = 'toast ' + type;
   el.textContent = msg;
@@ -1239,7 +1259,7 @@ async function doSend() {
       const crlf = CRLF_MAP[S.crlf] || '';
       bytes = new TextEncoder().encode(raw + crlf);
     }
-  } catch (e) { toast(e.message, 'err'); return; }
+  } catch (e) { toast('发送失败：' + errZh(e), 'err'); return; }
   const ok = await Serial.send(bytes);
   if (ok) {
     viewAddTx(raw, bytes);
@@ -1551,6 +1571,8 @@ async function init() {
   Theme.init();
   View.init();
   bindUI();
+  window.addEventListener('resize', repositionToasts);
+  repositionToasts();
   tickClock();
   setInterval(tickClock, 1000);
   state.cmdHist = S.cmdHist || [];
