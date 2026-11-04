@@ -1,0 +1,1569 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Serial Listener · 串口侦听器</title>
+<style>
+/* ============ 设计系统（主题定义） ============ */
+:root{
+  --mono:"Cascadia Code","Cascadia Mono",Consolas,"Courier New",monospace;
+  --r:12px;
+}
+
+/* 1. 夜间模式 (默认 Dark) */
+body[data-theme="dark"] {
+  --bg0:#070b13; --bg1:#0b101c; --bg2:#0e1524;
+  --panel:#111a2c; --panel2:#0c1322; --panel3:#182338;
+  --line:#1c2a45; --line2:#26375a;
+  --text:#e8eef7; --text2:#9fb0c9; --text3:#5f7190;
+  --accent:#38bdf8; --accent2:#6366f1; --accent-soft:rgba(56,189,248,.12);
+  --ok:#34d399; --warn:#fbbf24; --danger:#f87171;
+  --bg-grad-1:rgba(56,189,248,.08);
+  --bg-grad-2:rgba(99,102,241,.08);
+  --viewer-bg:#04070d;
+  --scroll-thumb:#24334f;
+  --scroll-thumb-hover:#32456b;
+  --shadow-panel:0 8px 24px rgba(0,0,0,.35);
+  --shadow-toast:0 10px 30px rgba(0,0,0,.5);
+}
+
+/* 2. 白天模式 (Light) */
+body[data-theme="light"] {
+  --bg0:#f4f7f9; --bg1:#e6ecf2; --bg2:#dbe3ec;
+  --panel:#ffffff; --panel2:#f0f4f8; --panel3:#e2eaf3;
+  --line:#cbd6e2; --line2:#b0c1d4;
+  --text:#1e293b; --text2:#475569; --text3:#94a3b8;
+  --accent:#0284c7; --accent2:#4f46e5; --accent-soft:rgba(2,132,199,.1);
+  --ok:#10b981; --warn:#f59e0b; --danger:#ef4444;
+  --bg-grad-1:rgba(2,132,199,.05);
+  --bg-grad-2:rgba(79,70,229,.05);
+  --viewer-bg:#f8fafc;
+  --scroll-thumb:#cbd5e1;
+  --scroll-thumb-hover:#94a3b8;
+  --shadow-panel:0 8px 24px rgba(0,0,0,.06);
+  --shadow-toast:0 10px 30px rgba(0,0,0,.1);
+}
+
+/* 3. 护眼模式 (Eye-care) */
+body[data-theme="eye-care"] {
+  --bg0:#e8f0e8; --bg1:#d8e6d8; --bg2:#c8dec8;
+  --panel:#d4e8d4; --panel2:#cbe0cb; --panel3:#bcd6bc;
+  --line:#a3c2a3; --line2:#89b089;
+  --text:#2c3e2c; --text2:#4a5e4a; --text3:#6b7c6b;
+  --accent:#2e8b57; --accent2:#3cb371; --accent-soft:rgba(46,139,87,.15);
+  --ok:#2e8b57; --warn:#d97706; --danger:#dc2626;
+  --bg-grad-1:rgba(46,139,87,.05);
+  --bg-grad-2:rgba(60,179,113,.05);
+  --viewer-bg:#dceedc;
+  --scroll-thumb:#89b089;
+  --scroll-thumb-hover:#6b8e6b;
+  --shadow-panel:0 8px 24px rgba(0,0,0,.08);
+  --shadow-toast:0 10px 30px rgba(0,0,0,.15);
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:"Segoe UI","Microsoft YaHei UI","Microsoft YaHei",system-ui,sans-serif;
+  background:
+    radial-gradient(1200px 500px at 85% -10%, var(--bg-grad-1), transparent 60%),
+    radial-gradient(900px 400px at -10% 110%, var(--bg-grad-2), transparent 60%),
+    linear-gradient(180deg,var(--bg1),var(--bg0));
+  color:var(--text);
+  display:flex;flex-direction:column;
+  min-width:980px;min-height:640px;
+  overflow:hidden;
+  transition: background-color .3s, color .3s;
+}
+::selection{background:var(--accent-soft); color:var(--text)}
+button{font-family:inherit;cursor:pointer}
+input,select{font-family:inherit}
+/* 滚动条 */
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--scroll-thumb);border-radius:6px;border:2px solid transparent;background-clip:content-box}
+::-webkit-scrollbar-thumb:hover{background:var(--scroll-thumb-hover);background-clip:content-box;border:2px solid transparent}
+
+#app{display:flex;flex-direction:column;height:100vh;padding:14px 16px 10px;gap:10px}
+
+/* ============ 顶栏 ============ */
+.topbar{
+  display:flex;align-items:center;gap:18px;
+  background:linear-gradient(180deg, rgba(255,255,255,.03),transparent),var(--panel);
+  border:1px solid var(--line);border-radius:var(--r);
+  padding:12px 16px;
+  box-shadow:var(--shadow-panel);
+}
+.brand{display:flex;align-items:center;gap:12px;flex-shrink:0}
+.logo{
+  width:42px;height:42px;border-radius:11px;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 14px var(--accent-soft);
+}
+.logo svg{width:24px;height:24px;filter:drop-shadow(0 1px 2px rgba(0,0,0,.3))}
+.brand h1{font-size:16px;font-weight:700;letter-spacing:.3px}
+.brand p{font-size:11px;color:var(--text3);margin-top:2px}
+.conn{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;flex:1;justify-content:flex-end}
+.field{display:flex;flex-direction:column;gap:4px}
+.field label{font-size:10.5px;color:var(--text3);letter-spacing:.5px;text-transform:uppercase;font-weight:600}
+.field select,.field .portsel select{
+  background:var(--panel2);color:var(--text);border:1px solid var(--line);
+  border-radius:8px;height:32px;padding:0 8px;font-size:12.5px;outline:none;
+  transition:border-color .15s, box-shadow .15s;
+  min-width:86px;
+}
+.field select:hover{border-color:var(--line2)}
+.field select:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.portsel{display:flex;gap:6px}
+.portsel select{min-width:150px}
+
+/* 按钮 */
+.btn{
+  border:1px solid var(--line2);background:var(--panel3);color:var(--text);
+  border-radius:8px;height:32px;padding:0 14px;font-size:12.5px;font-weight:600;
+  transition:all .15s;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;
+}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn:active{transform:translateY(1px)}
+.btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+.btn.primary{
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  border:none;color:#fff;min-width:108px;justify-content:center;
+  box-shadow:0 4px 14px var(--accent-soft);
+}
+.btn.primary:hover{filter:brightness(1.1);color:#fff}
+.btn.primary.connected{background:linear-gradient(135deg,#10b981,#059669);box-shadow:0 4px 14px rgba(16,185,129,.3);color:#fff}
+.btn.primary.danger{background:linear-gradient(135deg,#f87171,#dc2626);box-shadow:0 4px 14px rgba(248,113,113,.3);color:#fff}
+.btn.sm{height:26px;padding:0 10px;font-size:11.5px;border-radius:7px}
+.btn.ghost{background:transparent;border-color:transparent}
+.btn.ghost:hover{border-color:var(--line2)}
+.btn.accent{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+.btn.accent:hover{background:var(--accent);color:#fff}
+
+/* ============ 工具栏 ============ */
+.toolbar{
+  display:flex;align-items:center;gap:8px 10px;flex-wrap:wrap;row-gap:8px;
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
+  padding:8px 12px;flex-shrink:0; box-shadow:var(--shadow-panel);
+}
+.seg{display:flex;background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:2px;gap:2px}
+.seg button{
+  border:none;background:transparent;color:var(--text2);font-size:12px;font-weight:600;
+  padding:5px 16px;border-radius:7px;transition:all .15s;
+}
+.seg button:hover{color:var(--text)}
+.seg button.on{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff}
+.sep{width:1px;height:22px;background:var(--line)}
+.chk{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--text2);cursor:pointer;user-select:none;white-space:nowrap}
+.chk input{accent-color:var(--accent);width:14px;height:14px;cursor:pointer}
+.search{display:flex;align-items:center;gap:6px;flex:1 1 300px;min-width:300px;max-width:380px}
+.search input{
+  flex:1;min-width:130px;background:var(--panel2);border:1px solid var(--line);color:var(--text);
+  border-radius:8px;height:28px;padding:0 10px;font-size:12.5px;outline:none;transition:all .15s;
+}
+.search input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.search input.active{border-color:var(--warn)}
+.alarm{display:flex;align-items:center;gap:8px}
+.alarm input[type=text]{
+  background:var(--panel2);border:1px solid var(--line);color:var(--text);
+  border-radius:8px;height:28px;padding:0 10px;font-size:12px;outline:none;width:190px;
+}
+.alarm input[type=text]:focus{border-color:var(--warn);box-shadow:0 0 0 3px rgba(251,191,36,.15)}
+.spacer{flex:1}
+/* 开关 */
+.switch{display:flex;align-items:center;gap:7px;cursor:pointer;user-select:none}
+.switch input{display:none}
+.switch .slider{
+  width:32px;height:18px;border-radius:10px;background:var(--panel3);border:1px solid var(--line2);
+  position:relative;transition:all .2s;flex-shrink:0;
+}
+.switch .slider::after{
+  content:"";position:absolute;top:2px;left:2px;width:12px;height:12px;border-radius:50%;
+  background:var(--text3);transition:all .2s;
+}
+.switch input:checked + .slider{background:linear-gradient(135deg,#f59e0b,#ef4444);border-color:transparent}
+.switch input:checked + .slider::after{left:16px;background:#fff}
+.sw-label{font-size:12.5px;color:var(--text2)}
+
+/* 主题下拉框专用样式 */
+.theme-select {
+  background:var(--panel2); color:var(--text); border:1px solid var(--line);
+  border-radius:7px; height:26px; font-size:12px; padding:0 6px; outline:none; cursor:pointer;
+}
+.theme-select:focus{border-color:var(--accent); box-shadow:0 0 0 2px var(--accent-soft)}
+
+/* ============ 接收区 ============ */
+.viewer-wrap{position:relative;flex:1;min-height:200px;display:flex;flex-direction:column;overflow:hidden;
+  background:var(--viewer-bg);border:1px solid var(--line);border-radius:var(--r); transition: background-color .3s;}
+.viewer{flex:1;overflow-y:auto;padding:10px 14px;font-family:var(--mono);font-size:13px;line-height:1.62;}
+
+/* 使用 Flex 分列布局解决换行对齐问题 */
+.viewer .line{display:flex;align-items:flex-start;color:var(--text);padding:0 2px;border-radius:4px;}
+.viewer .line .msg{flex-grow:1;white-space:pre-wrap;word-break:break-all;}
+
+.viewer .line:hover{background:var(--accent-soft)}
+.viewer .line .ts{color:var(--text3);margin-right:8px;user-select:none;font-size:12px;flex-shrink:0;line-height:1.75;}
+body.ts-off .viewer .line .ts{display:none}
+.viewer .line .hex{color:var(--accent)}
+.viewer .line .asc{color:var(--text2);margin-left:10px}
+.viewer .line mark{background:rgba(251,191,36,.35);color:var(--text);border-radius:3px;padding:0 1px}
+.viewer .line.pending{color:var(--text3);font-style:italic}
+.viewer .line.sys{color:var(--text3);font-style:italic}
+.viewer .line.sys b{color:var(--warn)}
+.viewer .line.sys.err b{color:var(--danger)}
+.viewer .line.txline{color:var(--accent);background:var(--accent-soft);border-left:3px solid var(--accent);padding-left:6px;border-radius:0 4px 4px 0}
+.viewer .line.txline .dir{color:var(--accent);font-weight:700;margin-right:4px;user-select:none}
+.st-autolog{font-size:11px;color:var(--text3);font-family:var(--mono);white-space:nowrap}
+.st-autolog.on{color:var(--ok)}
+.st-autolog.dl{color:var(--warn)}
+.empty{
+  height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+  color:var(--text3);font-family:"Segoe UI","Microsoft YaHei",sans-serif;
+}
+.empty .empty-icon{width:64px;height:64px;border-radius:18px;background:var(--panel3);display:flex;align-items:center;justify-content:center;margin-bottom:6px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.05), 0 8px 24px var(--shadow-panel)}
+.empty .empty-icon svg{width:30px;height:30px;opacity:.7}
+.empty h3{font-size:15px;color:var(--text2);font-weight:600}
+.empty p{font-size:12.5px}
+.banner{
+  position:absolute;left:50%;bottom:14px;transform:translateX(-50%);
+  background:rgba(251,191,36,.12);border:1px solid rgba(251,191,36,.4);color:#d97706;
+  padding:7px 16px;border-radius:999px;font-size:12.5px;font-weight:600;backdrop-filter:blur(6px);
+  box-shadow:0 6px 20px rgba(0,0,0,.1);cursor:pointer;white-space:nowrap;
+}
+.hidden{display:none!important}
+
+/* 报警闪烁 */
+body.alarm .viewer-wrap{animation:alarmPulse 1s ease-in-out 3}
+@keyframes alarmPulse{
+  0%,100%{box-shadow:0 0 0 0 rgba(248,113,113,0)}
+  50%{box-shadow:0 0 0 5px rgba(248,113,113,.55), inset 0 0 40px rgba(248,113,113,.12)}
+}
+
+/* ============ 发送区 ============ */
+.sender{
+  flex-shrink:0;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
+  padding:10px 12px;display:flex;flex-direction:column;gap:8px; box-shadow:var(--shadow-panel);
+}
+.send-head{display:flex;align-items:center;gap:8px}
+.send-title{font-size:12px;font-weight:700;color:var(--text2);margin-right:2px;letter-spacing:1px}
+.send-head select{
+  background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:7px;
+  height:26px;font-size:12px;padding:0 6px;outline:none;
+}
+.quicklist{display:flex;gap:6px;flex-wrap:wrap;flex:1;overflow:hidden;max-height:30px}
+.chip{
+  display:inline-flex;align-items:center;gap:5px;background:var(--panel3);border:1px solid var(--line);
+  color:var(--text2);border-radius:999px;padding:2px 6px 2px 10px;font-size:11.5px;cursor:pointer;
+  transition:all .15s;font-family:var(--mono);max-width:200px;
+}
+.chip:hover{border-color:var(--accent);color:var(--accent)}
+.chip .x{color:var(--text3);font-size:12px;padding:0 3px;border-radius:50%}
+.chip .x:hover{color:var(--danger)}
+.send-row{display:flex;gap:8px}
+.send-row input{
+  flex:1;background:var(--panel2);border:1px solid var(--line);color:var(--text);
+  border-radius:8px;height:36px;padding:0 12px;font-size:13px;font-family:var(--mono);outline:none;transition:all .15s;
+}
+.send-row input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.send-row .btn{height:36px}
+
+/* ============ 状态栏 ============ */
+.statusbar{
+  flex-shrink:0;display:flex;align-items:center;gap:16px;
+  background:var(--panel);border:1px solid var(--line);border-radius:10px;
+  padding:6px 14px;font-size:12px;color:var(--text2); box-shadow:var(--shadow-panel);
+}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--text3);flex-shrink:0}
+.dot.on{background:var(--ok);box-shadow:0 0 0 0 rgba(52,211,153,.6);animation:dotPulse 2s infinite}
+.dot.err{background:var(--danger)}
+@keyframes dotPulse{
+  0%{box-shadow:0 0 0 0 rgba(52,211,153,.5)}
+  70%{box-shadow:0 0 0 7px rgba(52,211,153,0)}
+  100%{box-shadow:0 0 0 0 rgba(52,211,153,0)}
+}
+.st-item b{color:var(--text);font-family:var(--mono);font-weight:600}
+.st-item.muted{color:var(--text3)}
+#st-text{font-weight:600}
+#st-text.on{color:var(--ok)}
+#st-text.err{color:var(--danger)}
+
+/* ============ Toast ============ */
+#toasts{position:fixed;top:16px;right:16px;z-index:999;display:flex;flex-direction:column;gap:8px;max-width:360px}
+.toast{
+  background:var(--panel3);border:1px solid var(--line2);color:var(--text);
+  padding:10px 14px;border-radius:10px;font-size:12.5px;box-shadow:var(--shadow-toast);
+  animation:toastIn .25s ease;display:flex;gap:8px;align-items:flex-start;backdrop-filter:blur(8px);
+}
+.toast.info{border-left:3px solid var(--accent)}
+.toast.ok{border-left:3px solid var(--ok)}
+.toast.warn{border-left:3px solid var(--warn)}
+.toast.err{border-left:3px solid var(--danger)}
+@keyframes toastIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:none}}
+
+/* 不支持提示条 */
+.unsupported{
+  position:fixed;top:0;left:0;right:0;z-index:1000;background:#7f1d1d;color:#fecaca;
+  text-align:center;padding:8px;font-size:13px;font-weight:600;
+}
+</style>
+</head>
+<body data-theme="dark">
+<div id="app">
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#04121f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 3v3M15 3v3M7 6h10l1 3v4a4 4 0 0 1-8 0V9l-1-3z"/>
+          <circle cx="12" cy="13" r="1.6" fill="#04121f"/>
+          <path d="M12 17v4"/>
+        </svg>
+      </div>
+      <div>
+        <h1>Serial Listener</h1>
+        <p>串口侦听器 · 单文件本地运行（Web Serial）</p>
+      </div>
+    </div>
+    <div class="conn">
+      <div class="field">
+        <label>端口</label>
+        <div class="portsel">
+          <select id="sel-port"><option value="">未授权端口，请点击选择…</option></select>
+          <button id="btn-pick" class="btn ghost sm" title="打开系统端口选择器" aria-label="打开系统端口选择器">选择…</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>波特率</label>
+        <select id="sel-baud"></select>
+      </div>
+      <div class="field">
+        <label>数据位</label>
+        <select id="sel-data">
+          <option value="8">8</option>
+          <option value="7">7</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>停止位</label>
+        <select id="sel-stop">
+          <option value="1">1</option>
+          <option value="2">2</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>校验</label>
+        <select id="sel-parity">
+          <option value="none">无</option>
+          <option value="even">偶校验</option>
+          <option value="odd">奇校验</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>流控</label>
+        <select id="sel-flow">
+          <option value="none">无</option>
+          <option value="hardware">硬件 RTS/CTS</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>编码</label>
+        <select id="sel-enc">
+          <option value="utf-8">UTF-8</option>
+          <option value="gbk">GBK</option>
+          <option value="latin1">Latin-1</option>
+        </select>
+      </div>
+      <button id="btn-connect" class="btn primary" aria-label="连接或断开串口">连接</button>
+    </div>
+  </header>
+
+  <section class="toolbar">
+    <div class="seg" id="seg-mode">
+      <button data-mode="ascii" class="on">文本</button>
+      <button data-mode="hex">HEX</button>
+    </div>
+    <div class="sep"></div>
+    <select id="sel-theme" class="theme-select" title="切换显示主题">
+      <option value="auto">🌓 自动</option>
+      <option value="light">☀️ 白天</option>
+      <option value="dark">🌙 夜间</option>
+      <option value="eye-care">🌿 护眼</option>
+    </select>
+    <div class="sep"></div>
+    <label class="chk"><input type="checkbox" id="chk-ts"><span>时间戳</span></label>
+    <label class="chk"><input type="checkbox" id="chk-scroll"><span>自动滚动</span></label>
+    <label class="chk"><input type="checkbox" id="chk-pause"><span>暂停</span></label>
+    <button id="btn-clear" class="btn ghost sm" title="清空显示与日志">清空</button>
+    <div class="sep"></div>
+    <div class="search">
+      <input id="in-filter" placeholder="过滤 / 搜索关键字…" spellcheck="false">
+      <button id="btn-case" class="btn ghost sm" title="切换大小写敏感">Aa</button>
+      <button id="btn-filteronly" class="btn ghost sm" title="仅显示匹配行">仅匹配</button>
+    </div>
+    <div class="sep"></div>
+    <div class="alarm">
+      <label class="switch">
+        <input type="checkbox" id="chk-alarm">
+        <span class="slider"></span>
+        <span class="sw-label">报警</span>
+      </label>
+      <input type="text" id="in-alarm" placeholder="报警关键字,逗号分隔" spellcheck="false">
+    </div>
+    <div class="sep"></div>
+    <label class="chk" title="连接成功后自动保存日志到本地"><input type="checkbox" id="chk-autolog"><span>自动保存日志</span></label>
+    <button id="btn-logdir" class="btn ghost sm" title="选择自动保存目录（不选择则保存到浏览器下载目录，每段文件自动命名）">保存位置</button>
+    <span id="st-autolog" class="st-autolog" title="自动日志状态"></span>
+    <div class="spacer"></div>
+    <button id="btn-export" class="btn accent sm" title="导出当前显示的日志为 TXT 文件" aria-label="导出当前会话日志">导出TXT</button>
+  </section>
+
+  <section class="viewer-wrap" id="viewer-wrap">
+    <div id="viewer" class="viewer" role="log" aria-label="串口数据接收区" aria-live="off">
+      <div class="empty" id="empty-state">
+        <div class="empty-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2 12h4l2-7 4 14 2-7h8"/>
+          </svg>
+        </div>
+        <h3>等待串口数据</h3>
+        <p>点击右上角「连接」选择串口，即可开始实时侦听</p>
+      </div>
+    </div>
+    <div id="pause-banner" class="banner hidden">已暂停</div>
+  </section>
+
+  <section class="sender">
+    <div class="send-head">
+      <span class="send-title">发送</span>
+      <select id="sel-sendmode" title="发送格式">
+        <option value="ascii">文本</option>
+        <option value="hex">HEX</option>
+      </select>
+      <select id="sel-crlf" title="行尾附加">
+        <option value="none">无换行</option>
+        <option value="CR">CR</option>
+        <option value="LF">LF</option>
+        <option value="CRLF">CRLF</option>
+      </select>
+      <button id="btn-quickadd" class="btn ghost sm" title="将输入框内容存为快捷发送">+ 存为快捷</button>
+      <div class="quicklist" id="quicklist"></div>
+    </div>
+    <div class="send-row">
+      <input id="in-send" placeholder="输入要发送的内容，Enter 发送；HEX 模式示例：48 65 6C 6C 6F" spellcheck="false" autocomplete="off" aria-label="发送内容输入框">
+      <button id="btn-send" class="btn primary">发送</button>
+    </div>
+  </section>
+
+  <footer class="statusbar">
+    <span class="dot" id="st-dot"></span>
+    <span id="st-text">未连接</span>
+    <span class="st-item">RX <b id="st-rx">0 B</b></span>
+    <span class="st-item">速率 <b id="st-rate">0 B/s</b></span>
+    <span class="st-item">TX <b id="st-tx">0 B</b></span>
+    <span class="st-item" id="st-params"></span>
+    <span class="spacer"></span>
+    <span class="st-item" id="st-clock">--:--:--</span>
+    <span class="st-item muted">v0.6.0 · 数据仅存于本机</span>
+  </footer>
+</div>
+<div id="toasts"></div>
+<script>'use strict';
+/* =====================================================================
+ * Serial Listener · 串口侦听器
+ * 单文件纯前端实现（Web Serial API，Chrome/Edge，file:// 可直接运行）
+ * 模块：Store(配置) / Serial(串口核心) / View(渲染) / Alarm(报警) / UI(交互) / Theme(主题)
+ * ===================================================================== */
+
+const TEST_MODE = new URLSearchParams(location.search).has('test');
+
+const $ = (s) => document.querySelector(s);
+const $$ = (s) => Array.from(document.querySelectorAll(s));
+const pad = (n, w = 2) => String(n).padStart(w, '0');
+
+function fmtTime(d = new Date()) {
+  return '[' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds()) + '.' + pad(d.getMilliseconds(), 3) + ']';
+}
+
+// 修改：文件命名格式 YYYY-MM-DD_HH-mm-ss
+function fmtFileTime(d = new Date()) {
+  return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + '_' + pad(d.getHours()) + '-' + pad(d.getMinutes()) + '-' + pad(d.getSeconds());
+}
+
+function fmtBytes(n) {
+  if (n < 1024) return n + ' B';
+  if (n < 1048576) return (n / 1024).toFixed(1) + ' KB';
+  return (n / 1048576).toFixed(2) + ' MB';
+}
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+function escapeRe(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+function hexStr(bytes) { return Array.from(bytes).map((b) => b.toString(16).padStart(2, '0').toUpperCase()).join(' '); }
+function toast(msg, type = 'info', ms = 3200) {
+  const box = $('#toasts');
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  el.textContent = msg;
+  box.appendChild(el);
+  setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity .3s'; }, ms);
+  setTimeout(() => el.remove(), ms + 320);
+}
+
+const Store = {
+  KEY: 'serialListener.v1',
+  defaults() {
+    return {
+      theme: 'auto',
+      baud: 115200, dataBits: 8, stopBits: 1, parity: 'none', flowControl: 'none', encoding: 'utf-8',
+      mode: 'ascii', showTs: true, autoScroll: true,
+      caseSensitive: false, filter: '', filterOnly: false,
+      alarmOn: false, alarmWords: '',
+      autoLog: false,
+      sendMode: 'ascii', crlf: 'none', quickSends: ['AT', 'AT+RST', 'Hello', '0102030405'],
+      cmdHist: [],
+      lastPortName: ''
+    };
+  },
+  load() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(this.KEY) || '{}');
+      return Object.assign(this.defaults(), saved);
+    } catch (e) { return this.defaults(); }
+  },
+  save() { try { localStorage.setItem(this.KEY, JSON.stringify(S)); } catch (e) {} }
+};
+let S = Store.load();
+
+const state = {
+  port: null, reader: null, writer: null, connected: false,
+  lastPort: null, lastPortName: '',
+  pending: '', pendingBytes: [], pendingEl: null,
+  rx: 0, tx: 0,
+  paused: false, pausedBuf: [], pausedBytes: 0,
+  log: [],
+  hexFlushTimer: null,
+  cmdHist: [],
+  cmdIdx: -1,
+  busy: false
+};
+
+let liveDecoder = null;
+let liveEncoding = null;
+let lastRx = 0;
+const EMPTY_STATE_HTML = '<div class="empty" id="empty-state"><div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h4l2-7 4 14 2-7h8"/></svg></div><h3>等待串口数据</h3><p>点击右上角「连接」选择串口，即可开始实时侦听</p></div>';
+const MAX_LOG = 20000;
+const MAX_LINES = 6000;
+const HEX_COL = 16;
+
+const Theme = {
+  getAutoTheme() {
+    const h = new Date().getHours();
+    return (h >= 6 && h < 18) ? 'light' : 'dark';
+  },
+  apply() {
+    let active = S.theme;
+    if (active === 'auto') {
+      active = this.getAutoTheme();
+    }
+    document.body.setAttribute('data-theme', active);
+    const sel = $('#sel-theme');
+    if (sel) sel.value = S.theme;
+  },
+  init() {
+    this.apply();
+    setInterval(() => {
+      if (S.theme === 'auto') {
+        this.apply();
+      }
+    }, 60000);
+  }
+};
+
+let fakeSerial = null;
+let FakePortClass = null;
+if (TEST_MODE) {
+  FakePortClass = class FakePort {
+    constructor(name, idx) {
+      this.name = name; this.opened = false; this._ctrl = null; this._tx = [];
+      this._info = { usbVendorId: 0x1234, usbProductId: idx || 1 };
+      this._failOpen = null; this._failWrite = null;
+    }
+    async open(opts) {
+      if (this._failOpen) { const e = new Error(this._failOpen); this._failOpen = null; throw e; }
+      this.opened = true; this.opts = opts;
+      const self = this;
+      this.readable = new ReadableStream({ start(c) { self._ctrl = c; } });
+      this.writable = new WritableStream({
+        write(chunk) {
+          if (self._failWrite) { const e = new Error(self._failWrite); self._failWrite = null; throw e; }
+          self._tx.push(new Uint8Array(chunk));
+        },
+        close() {}, abort() {}
+      });
+    }
+    async close() { this.opened = false; if (this._ctrl) { try { await this._ctrl.close(); } catch (e) {} } }
+    async forget() {}
+    getInfo() { return this._info; }
+    feed(bytes) { if (this._ctrl) this._ctrl.enqueue(bytes); }
+    txAll() { const total = this._tx.reduce((a, b) => a + b.length, 0); return { bytes: this._tx, total }; }
+    drop() { if (this._ctrl) this._ctrl.error(new Error('模拟异常断开')); }
+  }
+  fakeSerial = {
+    _ports: [],
+    _cancelNext: false,
+    async requestPort() {
+      if (this._cancelNext) { this._cancelNext = false; throw new DOMException('用户取消选择', 'NotFoundError'); }
+      if (!this._ports.length) this._ports.push(new FakePortClass('COM10', 1));
+      return this._ports[0];
+    },
+    async getPorts() { return this._ports.slice(); }
+  };
+  try {
+    const saved = sessionStorage.getItem('__testPorts');
+    if (saved) fakeSerial._ports = saved.split(',').filter(Boolean).map((n, i) => new FakePortClass(n, i + 1));
+  } catch (e) {}
+  Object.defineProperty(navigator, 'serial', { value: fakeSerial, configurable: true });
+}
+
+const Serial = {
+  async ensure() {
+    if (!navigator.serial) throw new Error('当前浏览器不支持 Web Serial API，请使用 Chrome / Edge 打开');
+  },
+  async refreshPorts(selectName) {
+    try {
+      await this.ensure();
+      const ports = await navigator.serial.getPorts();
+      const sel = $('#sel-port');
+      sel.innerHTML = '';
+      if (!ports.length) {
+        sel.innerHTML = '<option value="">未授权端口，请点击选择…</option>';
+      } else {
+        ports.forEach((p, i) => {
+          const o = document.createElement('option');
+          o.value = String(i);
+          o.textContent = portName(p, i);
+          sel.appendChild(o);
+        });
+        if (selectName) {
+          const idx = ports.findIndex((p) => portName(p) === selectName);
+          if (idx >= 0) sel.value = String(idx);
+        }
+      }
+      state.grantedPorts = ports;
+    } catch (e) {
+      toast(e.message, 'err');
+    }
+  },
+  async pickPort() {
+    await this.ensure();
+    try {
+      const port = await navigator.serial.requestPort();
+      state.lastPort = port;
+      state.lastPortName = portName(port);
+      S.lastPortName = state.lastPortName; Store.save();
+      await this.refreshPorts(state.lastPortName);
+      return port;
+    } catch (e) { return null; }
+  },
+  getOpts() {
+    return {
+      baudRate: Number(S.baud),
+      dataBits: Number(S.dataBits),
+      stopBits: Number(S.stopBits),
+      parity: S.parity,
+      flowControl: S.flowControl
+    };
+  },
+  async connect(port, opts) {
+    state.busy = true; updateConnectBtn();
+    try {
+      await port.open(opts);
+      state.port = port;
+      state.writer = port.writable.getWriter();
+      state.connected = true;
+      state.busy = false;
+      state.lastPort = port;
+      const _ports = state.grantedPorts || [];
+      state.lastPortName = portName(port, _ports.indexOf(port));
+      S.lastPortName = state.lastPortName; Store.save();
+      setStatus(true, portName(port));
+      updateConnectBtn();
+      viewAddSys('已连接 ' + portName(port) + ' @ ' + opts.baudRate + ' ' + opts.dataBits + 'N' + (opts.stopBits === 2 ? '2' : '1') + (opts.parity !== 'none' ? opts.parity.toUpperCase() : '') + (opts.flowControl === 'hardware' ? ' RTS/CTS' : ''));
+      AutoLog.start(state.lastPortName);
+      this.readLoop(port);
+      return true;
+    } catch (e) {
+      state.busy = false;
+      toast('连接失败：' + e.message, 'err');
+      updateConnectBtn();
+      return false;
+    }
+  },
+  async readLoop(port) {
+    const enc = S.encoding === 'latin1' ? 'windows-1252' : S.encoding;
+    if (!liveDecoder || liveEncoding !== enc) {
+      liveDecoder = new TextDecoder(enc, { fatal: false });
+      liveEncoding = enc;
+    }
+    const decoder = liveDecoder;
+    let reader = null;
+    try {
+      while (state.port === port && port.readable) {
+        reader = port.readable.getReader();
+        state.reader = reader;
+        let streamEnded = false;
+        try {
+          for (;;) {
+            const { value, done } = await reader.read();
+            if (done) { streamEnded = true; break; }
+            if (state.port !== port) break;
+            state.rx += value.length;
+            updateCounters();
+            onBytes(new Uint8Array(value), decoder);
+          }
+        } finally {
+          try { reader.releaseLock(); } catch (e) {}
+          state.reader = null;
+        }
+        if (streamEnded && state.port === port) {
+          onDisconnected('连接已断开（串口流结束）');
+          break;
+        }
+      }
+    } catch (e) {
+      if (state.port === port) {
+        onDisconnected('读取异常：' + (e.message || e.name));
+      }
+    }
+  },
+  async disconnect(quiet) {
+    const port = state.port;
+    if (!port) return;
+    state.port = null;
+    if (state.writer) { try { state.writer.releaseLock(); } catch (e) {} state.writer = null; }
+    if (state.reader) { try { await state.reader.cancel(); } catch (e) {} state.reader = null; }
+    try { await port.close(); } catch (e) {}
+    state.connected = false;
+    AutoLog.stop();
+    setStatus(false);
+    updateConnectBtn();
+    if (!quiet) viewAddSys('已断开连接', true);
+    viewFlushPending();
+  },
+  async send(bytes) {
+    const port = state.port;
+    if (!port || !port.writable) { toast('请先连接串口', 'warn'); return false; }
+    const writer = state.writer;
+    if (!writer) { toast('发送通道未就绪', 'warn'); return false; }
+    try {
+      await writer.write(bytes);
+      state.tx += bytes.length;
+      updateCounters();
+      return true;
+    } catch (e) {
+      toast('发送失败：' + e.message, 'err');
+      if (state.port === port) onDisconnected('写入异常：' + e.message);
+      return false;
+    }
+  }
+};
+function portName(p, idx) {
+  try {
+    const i = p.getInfo();
+    if (i.usbVendorId) return 'USB#' + i.usbVendorId.toString(16) + ':' + i.usbProductId.toString(16);
+  } catch (e) {}
+  return '串口 #' + (idx === undefined || idx < 0 ? '?' : idx + 1);
+}
+
+const View = {
+  el: () => $('#viewer'),
+  _batch: [],
+  _scheduled: false,
+  schedule() {
+    if (this._scheduled) return;
+    this._scheduled = true;
+    requestAnimationFrame(() => this.flush());
+  },
+  flush() {
+    this._scheduled = false;
+    const v = this.el();
+    if (this._batch.length) {
+      const frag = document.createDocumentFragment();
+      for (const n of this._batch) frag.appendChild(n);
+      this._batch = [];
+      v.appendChild(frag);
+      this.trim();
+      if (S.autoScroll) v.scrollTop = v.scrollHeight;
+    }
+  },
+  trim() {
+    const v = this.el();
+    while (v.children.length > MAX_LINES) v.removeChild(v.firstChild);
+  },
+  add(html, cls) {
+    const div = document.createElement('div');
+    div.className = 'line ' + (cls || '');
+    div.innerHTML = html;
+    this._batch.push(div);
+    this.schedule();
+  },
+  clear() {
+    const v = this.el();
+    v.querySelectorAll('.line').forEach((n) => n.remove());
+    if (!v.querySelector('#empty-state')) {
+      v.insertAdjacentHTML('afterbegin', EMPTY_STATE_HTML);
+    }
+    state.pending = ''; state.pendingBytes = []; state.pendingEl = null; state.log = [];
+    state.pausedBuf = []; state.pausedBytes = 0;
+    updatePauseBanner();
+    state.rx = 0; state.tx = 0; lastRx = 0;
+    updateCounters();
+    showEmpty(true);
+  },
+  scrollBottom() { const v = this.el(); v.scrollTop = v.scrollHeight; }
+};
+function showEmpty(on) { const e = $('#empty-state'); if (e) e.style.display = on ? '' : 'none'; }
+
+function highlight(escaped, kw, caseSensitive) {
+  if (!kw) return escaped;
+  try {
+    const re = new RegExp(escapeRe(escapeHtml(kw)), caseSensitive ? 'g' : 'gi');
+    return escaped.replace(re, (m) => '<mark>' + m + '</mark>');
+  } catch (e) { return escaped; }
+}
+
+function onBytes(bytes, decoder) {
+  showEmpty(false);
+  const isHex = S.mode === 'hex';
+  if (isHex) {
+    for (const b of bytes) {
+      state.pendingBytes.push(b);
+      if (state.pendingBytes.length >= HEX_COL) flushHexLine();
+    }
+    scheduleHexFlush();
+  }
+  let text = decoder.decode(bytes, { stream: true });
+  if (text) {
+    if (text.indexOf('\uFEFF') !== -1) text = text.replace(/\uFEFF/g, '');
+    state.pending += text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    let idx;
+    while ((idx = state.pending.indexOf('\n')) >= 0) {
+      const line = state.pending.slice(0, idx);
+      state.pending = state.pending.slice(idx + 1);
+      if (isHex) Alarm.check(line);
+      else handleLine(line);
+    }
+    if (!isHex) updatePendingLine();
+  }
+}
+function scheduleHexFlush() {
+  if (S.mode === 'hex' && state.pendingBytes.length && !state.hexFlushTimer) {
+    state.hexFlushTimer = setTimeout(() => {
+      state.hexFlushTimer = null;
+      if (state.pendingBytes.length) flushHexLine();
+    }, 300);
+  }
+}
+
+function flushHexLine() {
+  const bytes = state.pendingBytes.splice(0, HEX_COL);
+  if (!bytes.length) return;
+  const hex = hexStr(bytes);
+  const asc = Array.from(bytes).map((b) => (b >= 32 && b <= 126 ? String.fromCharCode(b) : '.')).join('');
+  const t = fmtTime();
+  const hexDisplay = hex + '  |' + asc + '|';
+  state.log.push({ kind: 'hex', t, ascii: asc, hex: hexDisplay });
+  if (state.log.length > MAX_LOG) state.log.splice(0, state.log.length - MAX_LOG);
+  AutoLog.push({ kind: 'hex', t, ascii: asc, hex: hexDisplay });
+  if (S.filter && S.filterOnly && !entryMatches({ ascii: asc, hex: hexDisplay })) return;
+  const content = highlight(escapeHtml(hex), S.filter, S.caseSensitive)
+    + '  <span class="asc">|' + highlight(escapeHtml(asc), S.filter, S.caseSensitive) + '|</span>';
+  pushLineOrPause(t, content, 'hexline');
+}
+
+// 修复点：增加空行过滤
+function handleLine(line) {
+  const t = fmtTime();
+  const entry = { kind: 'txt', t, ascii: line, hex: hexStr(new TextEncoder().encode(line)) };
+  state.log.push(entry);
+  if (state.log.length > MAX_LOG) state.log.splice(0, state.log.length - MAX_LOG);
+  AutoLog.push(entry);
+  Alarm.check(line);
+  if (S.filter && S.filterOnly && !lineIncludes(line)) return;
+  
+  // 修复：如果是纯空行，且开启了时间戳，则不渲染，防止把时间戳撑开导致显示空行
+  if (S.showTs && line.trim() === '') return;
+
+  pushLineOrPause(t, highlight(escapeHtml(line), S.filter, S.caseSensitive), 'txtline');
+}
+
+function viewAddTx(text, bytes) {
+  showEmpty(false);
+  const t = fmtTime();
+  const asc = Array.from(bytes).map((b) => (b >= 32 && b <= 126 ? String.fromCharCode(b) : '.')).join('');
+  const hexDisplay = hexStr(bytes) + '  |' + asc + '|';
+  const entry = { kind: 'tx', t, ascii: text, hex: hexDisplay };
+  state.log.push(entry);
+  if (state.log.length > MAX_LOG) state.log.splice(0, state.log.length - MAX_LOG);
+  AutoLog.push(entry);
+  if (S.filter && S.filterOnly && !entryMatches(entry)) return;
+  let content = '<span class="dir">→</span> ';
+  if (S.mode === 'hex') {
+    content += highlight(escapeHtml(hexStr(bytes)), S.filter, S.caseSensitive)
+      + '  <span class="asc">|' + highlight(escapeHtml(asc), S.filter, S.caseSensitive) + '|</span>';
+  } else {
+    content += highlight(escapeHtml(text), S.filter, S.caseSensitive);
+  }
+  pushLineOrPause(t, content, 'txline');
+}
+
+function lineIncludes(text) {
+  const kw = S.filter;
+  if (!kw) return true;
+  return S.caseSensitive ? text.includes(kw) : text.toLowerCase().includes(kw.toLowerCase());
+}
+function pushLineOrPause(t, contentHtml, cls) {
+  if (state.paused) {
+    state.pausedBuf.push({ t, contentHtml, cls });
+    state.pausedBytes += contentHtml.length;
+    updatePauseBanner();
+    return;
+  }
+  let html = '';
+  if (S.showTs) html += '<span class="ts">' + t + '</span>';
+  html += '<span class="msg">' + contentHtml + '</span>';
+  View.add(html, cls);
+}
+
+let pendingScheduled = false;
+function updatePendingLine() {
+  if (S.mode !== 'ascii') return;
+  if (state.paused) { updatePauseBanner(); return; }
+  if (!state.pending && !state.pendingEl) return;
+  if (pendingScheduled) return;
+  pendingScheduled = true;
+  requestAnimationFrame(() => {
+    pendingScheduled = false;
+    if (!state.pending) {
+      if (state.pendingEl) { state.pendingEl.remove(); state.pendingEl = null; }
+      return;
+    }
+    if (!state.pendingEl) {
+      const div = document.createElement('div');
+      div.className = 'line pending';
+      View.el().appendChild(div);
+      state.pendingEl = div;
+    }
+    const msgContent = highlight(escapeHtml(state.pending), S.filter, S.caseSensitive) || '&nbsp;';
+    const html = (S.showTs ? '<span class="ts">' + fmtTime() + '</span>' : '') + '<span class="msg">' + msgContent + '</span>';
+    state.pendingEl.innerHTML = html;
+  });
+}
+function viewFlushPending() {
+  pendingScheduled = false;
+  if (state.hexFlushTimer) { clearTimeout(state.hexFlushTimer); state.hexFlushTimer = null; }
+  if (state.pending && !state.paused) handleLine(state.pending);
+  state.pending = '';
+  if (state.pendingEl) { state.pendingEl.remove(); state.pendingEl = null; }
+  if (S.mode === 'hex' && state.pendingBytes.length) flushHexLine();
+}
+function entryMatches(e) {
+  const kw = S.filter;
+  if (!kw) return true;
+  const text = (S.mode === 'hex' || e.kind === 'hex') ? e.hex : e.ascii;
+  return S.caseSensitive ? text.includes(kw) : text.toLowerCase().includes(kw.toLowerCase());
+}
+function rebuildView() {
+  const v = View.el();
+  v.innerHTML = '';
+  state.pendingEl = null;
+  if (S.mode === 'hex' && state.pendingBytes.length) flushHexLine();
+  const log = state.log;
+  if (!log.length) { showEmpty(false); if (state.pending) updatePendingLine(); return; }
+  showEmpty(false);
+  const start = Math.max(0, log.length - MAX_LINES);
+  const parts = [];
+  for (let i = start; i < log.length; i++) {
+    const e = log[i];
+    if (S.filterOnly && !entryMatches(e)) continue;
+    
+    // 修复：渲染历史记录时，如果是空行，且开启时间戳，则跳过渲染
+    if (S.showTs && e.kind !== 'hex' && e.kind !== 'tx' && e.ascii.trim() === '') continue;
+
+    const isHexEntry = (S.mode === 'hex' || e.kind === 'hex');
+    const isTx = e.kind === 'tx';
+    let html = '<div class="line ' + (isHexEntry ? 'hexline' : 'txtline') + (isTx ? ' txline' : '') + '">';
+    if (S.showTs) html += '<span class="ts">' + e.t + '</span>';
+    html += '<span class="msg">';
+    if (isTx) html += '<span class="dir">→</span> ';
+    html += highlight(escapeHtml(isHexEntry ? e.hex : e.ascii), S.filter, S.caseSensitive);
+    html += '</span></div>';
+    parts.push(html);
+  }
+  v.innerHTML = parts.join('');
+  if (S.autoScroll) v.scrollTop = v.scrollHeight;
+  if (state.pending && S.mode !== 'hex' && !state.paused) updatePendingLine();
+}
+
+function viewAddSys(msg, isErr) {
+  const html = (S.showTs ? '<span class="ts">' + fmtTime() + '</span>' : '') + '<span class="msg"><b>' + escapeHtml(msg) + '</b></span>';
+  View.add(html, isErr ? 'sys err' : 'sys');
+  View.flush();
+}
+
+function setPaused(on) {
+  state.paused = on;
+  $('#chk-pause').checked = on;
+  updatePauseBanner();
+  if (!on) {
+    viewFlushPending();
+    for (const it of state.pausedBuf) pushLineOrPause(it.t, it.contentHtml, it.cls);
+    state.pausedBuf = []; state.pausedBytes = 0;
+    updatePauseBanner();
+  }
+}
+function updatePauseBanner() {
+  const b = $('#pause-banner');
+  if (state.paused) {
+    b.textContent = '已暂停 · 缓存 ' + state.pausedBuf.length + ' 行 / ' + fmtBytes(state.pausedBytes) + '（点击恢复显示）';
+    b.classList.remove('hidden');
+  } else b.classList.add('hidden');
+}
+
+const Alarm = {
+  words: [],
+  setWords(s) { this.words = s.split(/[,，;；]/).map((w) => w.trim()).filter(Boolean); },
+  check(text) {
+    if (!S.alarmOn || !this.words.length) return;
+    const hit = this.words.find((w) => text.includes(w));
+    if (hit) this.fire(hit);
+  },
+  fire(hit) {
+    beep();
+    const body = document.body;
+    body.classList.remove('alarm');
+    void body.offsetWidth;
+    body.classList.add('alarm');
+    setTimeout(() => body.classList.remove('alarm'), 3200);
+    document.title = '⚠ 报警:' + hit + ' - Serial Listener';
+    setTimeout(() => { document.title = 'Serial Listener · 串口侦听器'; }, 4000);
+    toast('⚠ 触发报警：' + hit, 'warn', 5000);
+  }
+};
+let actx = null;
+function beep() {
+  try {
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    if (actx.state === 'suspended') actx.resume();
+    const t0 = actx.currentTime;
+    [[880, .18], [660, .18], [880, .22]].forEach(([f, d], i) => {
+      const o = actx.createOscillator(), g = actx.createGain();
+      o.type = 'square'; o.frequency.value = f;
+      g.gain.setValueAtTime(0.0001, t0 + i * .2);
+      g.gain.exponentialRampToValueAtTime(0.12, t0 + i * .2 + .02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + i * .2 + d);
+      o.connect(g); g.connect(actx.destination);
+      o.start(t0 + i * .2); o.stop(t0 + i * .2 + d + .05);
+    });
+  } catch (e) {}
+}
+
+function setStatus(connected, name) {
+  const dot = $('#st-dot'), txt = $('#st-text');
+  dot.className = 'dot ' + (connected ? 'on' : 'err');
+  txt.className = connected ? 'on' : 'err';
+  txt.textContent = connected ? '已连接 ' + name : '未连接';
+  $('#st-params').textContent = connected ? ('RX ' + fmtBytes(state.rx) + ' / TX ' + fmtBytes(state.tx)) : '';
+}
+function updateCounters() {
+  $('#st-rx').textContent = fmtBytes(state.rx);
+  $('#st-tx').textContent = fmtBytes(state.tx);
+  if (state.connected) $('#st-params').textContent = '';
+}
+function onDisconnected(msg) {
+  state.connected = false;
+  state.busy = false;
+  state.port = null;
+  if (state.writer) { try { state.writer.releaseLock(); } catch (e) {} state.writer = null; }
+  AutoLog.stop();
+  setStatus(false);
+  updateConnectBtn();
+  viewAddSys(msg, true);
+  toast(msg, 'err');
+}
+function updateConnectBtn() {
+  const b = $('#btn-connect');
+  if (state.busy) { b.disabled = true; b.textContent = '连接中…'; b.className = 'btn primary'; return; }
+  b.disabled = false;
+  if (state.connected) {
+    b.textContent = '断开';
+    b.className = 'btn primary connected';
+  } else if (state.lastPort) {
+    b.textContent = '重连';
+    b.className = 'btn primary';
+  } else {
+    b.textContent = '连接';
+    b.className = 'btn primary';
+  }
+}
+
+const AutoLog = {
+  on: false,
+  dir: null,
+  mode: 'none',
+  base: '', seg: 0, fh: null, writer: null,
+  buf: [], bufBytes: 0, _downloadBuf: '',
+  limit: 2 * 1024 * 1024,
+  timer: null, rotBusy: false,
+  sanitize(name) { return String(name || 'serial').replace(/[\\/:*?"<>|]/g, '_').slice(0, 40); },
+  async pickDir() {
+    try {
+      if (!window.showDirectoryPicker) throw new Error('当前浏览器不支持选择目录（将保存到下载目录）');
+      const dir = await window.showDirectoryPicker();
+      this.dir = dir;
+      toast('自动保存目录已设置', 'ok');
+    } catch (e) {
+      if (e.name === 'AbortError') return;
+      this.dir = null;
+      toast('无法选择目录（将保存到浏览器下载目录）：' + e.message, 'warn');
+    }
+    this.updateStatus();
+  },
+  start(portName) {
+    if (!this.on) return;
+    const ts = fmtFileTime();
+    this.base = this.sanitize(portName) + '_' + ts;
+    this.seg = 0; this.buf = []; this.bufBytes = 0; this._downloadBuf = '';
+    this.mode = this.dir ? 'file' : 'download';
+    const head = [
+      '# Serial Listener 自动日志',
+      '# 端口: ' + (portName || '-') + '  参数: ' + S.baud + ' ' + S.dataBits + 'N' + (S.stopBits === 2 ? '2' : '1') + '  编码: ' + S.encoding,
+      '# 开始: ' + new Date().toLocaleString('zh-CN') + '  模式: ' + (this.mode === 'file' ? '指定目录' : '浏览器下载目录'),
+      '# TX 行以 → 标记',
+      '#'
+    ].join('\r\n') + '\r\n';
+    this.buf.push(head); this.bufBytes += head.length;
+    this.openSegment().catch((e) => toast('自动日志创建失败：' + e.message, 'err'));
+    this.timer = setInterval(() => this.flush(), 2000);
+    this.updateStatus();
+  },
+  async openSegment() {
+    if (this.mode !== 'file' || !this.dir) { this.writer = null; return; }
+    this.fh = await this.dir.getFileHandle(this._fname(), { create: true });
+    this.writer = await this.fh.createWritable();
+  },
+  _fname() { return this.base + (this.seg > 0 ? '_' + pad(this.seg, 3) : '') + '.log'; },
+  _line(e) {
+    const body = (S.mode === 'hex' || e.kind === 'hex') ? e.hex : e.ascii;
+    return e.t + '  ' + (e.kind === 'tx' ? '→ ' : '') + body + '\r\n';
+  },
+  push(e) {
+    if (!this.on || this.mode === 'none') return;
+    const line = this._line(e);
+    this.buf.push(line); this.bufBytes += line.length;
+    if (this.bufBytes >= this.limit) this.scheduleRotate();
+  },
+  scheduleRotate() {
+    if (this.rotBusy) return;
+    this.rotBusy = true;
+    setTimeout(async () => {
+      try { await this.rotate(); } finally { this.rotBusy = false; }
+    }, 0);
+  },
+  async rotate() {
+    if (this.mode === 'none') return;
+    await this.flush();
+    if (this.mode === 'file' && this.writer) { try { await this.writer.close(); } catch (e) {} this.writer = null; }
+    else this.downloadSegment();
+    this.seg++;
+    this.buf = []; this.bufBytes = 0;
+    try { await this.openSegment(); } catch (e) { toast('自动日志轮转失败：' + e.message, 'err'); }
+    this.updateStatus();
+  },
+  async flush() {
+    if (!this.buf.length) return;
+    const text = this.buf.join('');
+    if (this.mode === 'file') {
+      if (!this.writer) return;
+      try {
+        await this.writer.write(text);
+        this.buf = []; this.bufBytes = 0;
+      } catch (e) { toast('自动日志写入失败：' + e.message, 'err'); }
+    } else if (this.mode === 'download') {
+      this._downloadBuf += text;
+      this.buf = []; this.bufBytes = 0;
+    }
+  },
+  downloadSegment() {
+    if (!this._downloadBuf) return;
+    const blob = new Blob([this._downloadBuf], { type: 'text/plain;charset=utf-8' });
+    this._downloadBuf = '';
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = this._fname();
+    document.body.appendChild(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+  },
+  async stop() {
+    if (this.timer) { clearInterval(this.timer); this.timer = null; }
+    if (this.mode === 'none') { this.updateStatus(); return; }
+    try {
+      await this.flush();
+      if (this.mode === 'file' && this.writer) { try { await this.writer.close(); } catch (e) {} this.writer = null; }
+      else if (this.mode === 'download') this.downloadSegment();
+    } catch (e) {}
+    this.mode = 'none'; this.seg = 0; this.base = ''; this.buf = []; this.bufBytes = 0;
+    this.updateStatus();
+  },
+  updateStatus() {
+    const el = $('#st-autolog');
+    if (!el) return;
+    if (!this.on) { el.textContent = ''; el.className = 'st-autolog'; return; }
+    if (this.mode === 'file') { el.textContent = '保存中: ' + this._fname(); el.className = 'st-autolog on'; }
+    else if (this.mode === 'download') { el.textContent = '保存中: 下载目录'; el.className = 'st-autolog dl'; }
+    else { el.textContent = '待连接'; el.className = 'st-autolog'; }
+  }
+};
+
+function parseHexInput(s) {
+  const clean = s.replace(/[\s,，]+/g, '');
+  if (!clean) return null;
+  if (!/^[0-9a-fA-F]+$/.test(clean)) throw new Error('HEX 内容含非法字符');
+  if (clean.length % 2 !== 0) throw new Error('HEX 长度必须为偶数（每字节 2 位）');
+  const out = new Uint8Array(clean.length / 2);
+  for (let i = 0; i < out.length; i++) out[i] = parseInt(clean.substr(i * 2, 2), 16);
+  return out;
+}
+async function doSend() {
+  const raw = $('#in-send').value;
+  if (!raw) return;
+  if (!state.cmdHist.length || state.cmdHist[state.cmdHist.length - 1] !== raw) {
+    state.cmdHist.push(raw);
+    if (state.cmdHist.length > 50) state.cmdHist.shift();
+  }
+  state.cmdIdx = -1;
+  Store.save();
+  let bytes;
+  try {
+    if (S.sendMode === 'hex') {
+      bytes = parseHexInput(raw);
+      if (!bytes) return;
+    } else {
+      const CRLF_MAP = { 'none': '', 'CR': '\r', 'LF': '\n', 'CRLF': '\r\n' };
+      const crlf = CRLF_MAP[S.crlf] || '';
+      bytes = new TextEncoder().encode(raw + crlf);
+    }
+  } catch (e) { toast(e.message, 'err'); return; }
+  const ok = await Serial.send(bytes);
+  if (ok) {
+    viewAddTx(raw, bytes);
+    toast('已发送 ' + bytes.length + ' 字节', 'ok', 1500);
+  }
+}
+function histPrev() {
+  if (!state.cmdHist.length) return;
+  state.cmdIdx = state.cmdIdx < 0 ? state.cmdHist.length - 1 : Math.max(0, state.cmdIdx - 1);
+  $('#in-send').value = state.cmdHist[state.cmdIdx];
+}
+function histNext() {
+  if (state.cmdIdx < 0) return;
+  state.cmdIdx++;
+  if (state.cmdIdx >= state.cmdHist.length) { state.cmdIdx = -1; $('#in-send').value = ''; }
+  else $('#in-send').value = state.cmdHist[state.cmdIdx];
+}
+function renderQuickSends() {
+  const q = $('#quicklist');
+  q.innerHTML = '';
+  S.quickSends.forEach((item, i) => {
+    const chip = document.createElement('span');
+    chip.className = 'chip';
+    chip.title = '点击发送';
+    const txt = document.createElement('span');
+    txt.textContent = item.length > 24 ? item.slice(0, 24) + '…' : item;
+    const x = document.createElement('span');
+    x.className = 'x'; x.textContent = '×'; x.title = '删除';
+    x.addEventListener('click', (ev) => { ev.stopPropagation(); S.quickSends.splice(i, 1); Store.save(); renderQuickSends(); });
+    chip.appendChild(txt); chip.appendChild(x);
+    chip.addEventListener('click', () => { $('#in-send').value = item; doSend(); });
+    q.appendChild(chip);
+  });
+}
+
+// 修改：只导出当前界面上能看到的内容为 txt
+function exportLog() {
+  if (!state.log.length) { toast('没有可导出的数据', 'warn'); return; }
+  
+  const lines = state.log.map((e) => { 
+    // 遵循当前的过滤规则
+    if (S.filterOnly && S.filter && !entryMatches(e)) return null;
+    
+    // 遵循界面的空行隐藏规则
+    if (S.showTs && e.kind !== 'hex' && e.kind !== 'tx' && e.ascii.trim() === '') return null;
+
+    const body = (S.mode === 'hex' || e.kind === 'hex') ? e.hex : e.ascii;
+    const ts = S.showTs ? e.t + ' ' : '';
+    const dir = (e.kind === 'tx' ? '→ ' : '');
+    
+    return ts + dir + body;
+  }).filter(Boolean); // 移除 null 项
+
+  const content = lines.join('\r\n');
+  const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  
+  // 默认文件名为当前时间 YYYY-MM-DD_HH-mm-ss.txt
+  a.download = fmtFileTime() + '.txt'; 
+  
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+  toast('已导出 TXT 文件：' + a.download, 'ok');
+}
+
+const BAUD_LIST = [300, 600, 1200, 2400, 4800, 9600, 14400, 19200, 38400, 57600, 115200, 230400, 460800, 921600, 1000000, 2000000];
+function populateBaud() {
+  const sel = $('#sel-baud');
+  sel.innerHTML = '';
+  BAUD_LIST.forEach((b) => {
+    const o = document.createElement('option');
+    o.value = b; o.textContent = b;
+    sel.appendChild(o);
+  });
+  const custom = document.createElement('option');
+  custom.value = 'custom'; custom.textContent = '自定义…';
+  sel.appendChild(custom);
+}
+function applySettingsToUI() {
+  $('#sel-theme').value = S.theme;
+  $('#sel-baud').value = BAUD_LIST.includes(Number(S.baud)) ? String(S.baud) : 'custom';
+  $('#sel-data').value = String(S.dataBits);
+  $('#sel-stop').value = String(S.stopBits);
+  $('#sel-parity').value = S.parity;
+  $('#sel-flow').value = S.flowControl;
+  $('#sel-enc').value = S.encoding;
+  $('#chk-ts').checked = S.showTs;
+  $('#chk-scroll').checked = S.autoScroll;
+  $('#chk-pause').checked = false;
+  $('#in-filter').value = S.filter;
+  $('#in-alarm').value = S.alarmWords;
+  $('#chk-alarm').checked = S.alarmOn;
+  $('#chk-autolog').checked = !!S.autoLog;
+  AutoLog.on = !!S.autoLog;
+  $('#sel-sendmode').value = S.sendMode;
+  $('#sel-crlf').value = S.crlf;
+  $$('#seg-mode button').forEach((b) => b.classList.toggle('on', b.dataset.mode === S.mode));
+  document.body.classList.toggle('ts-off', !S.showTs);
+  $('#btn-case').classList.toggle('accent', S.caseSensitive);
+  $('#btn-filteronly').classList.toggle('accent', S.filterOnly);
+  $('#in-filter').classList.toggle('active', !!S.filter);
+  Alarm.setWords(S.alarmWords);
+  renderQuickSends();
+}
+function bindUI() {
+  $('#sel-theme').addEventListener('change', (e) => {
+    S.theme = e.target.value;
+    Store.save();
+    Theme.apply();
+    toast('主题已切换：' + e.target.options[e.target.selectedIndex].text, 'info', 1200);
+  });
+
+  $$('#seg-mode button').forEach((b) => b.addEventListener('click', () => {
+    if (S.mode === b.dataset.mode) return;
+    S.mode = b.dataset.mode; Store.save();
+    $$('#seg-mode button').forEach((x) => x.classList.toggle('on', x.dataset.mode === S.mode));
+    viewFlushPending();
+    rebuildView();
+    toast('显示模式：' + (S.mode === 'hex' ? 'HEX' : '文本'), 'info', 1200);
+  }));
+  $('#sel-baud').addEventListener('change', () => {
+    const v = $('#sel-baud').value;
+    if (v === 'custom') {
+      const custom = prompt('请输入自定义波特率（如 250000）：', '250000');
+      const n = parseInt(custom, 10);
+      if (n > 0 && Number.isFinite(n)) { S.baud = n; const o = document.createElement('option'); o.value = n; o.textContent = n + '（自定义）'; $('#sel-baud').insertBefore(o, $('#sel-baud').lastChild); $('#sel-baud').value = String(n); }
+      else { $('#sel-baud').value = String(S.baud); toast('波特率无效', 'err'); return; }
+    } else S.baud = Number(v);
+    Store.save(); maybeApplyParams('波特率');
+  });
+  const bindSel = (id, key, label) => $(id).addEventListener('change', () => { S[key] = $(id).value; Store.save(); maybeApplyParams(label); });
+  bindSel('#sel-data', 'dataBits', '数据位');
+  bindSel('#sel-stop', 'stopBits', '停止位');
+  bindSel('#sel-parity', 'parity', '校验');
+  bindSel('#sel-flow', 'flowControl', '流控');
+  bindSel('#sel-enc', 'encoding', '编码');
+  $('#chk-ts').addEventListener('change', () => { S.showTs = $('#chk-ts').checked; document.body.classList.toggle('ts-off', !S.showTs); rebuildView(); Store.save(); });
+  $('#chk-scroll').addEventListener('change', () => { S.autoScroll = $('#chk-scroll').checked; if (S.autoScroll) View.scrollBottom(); Store.save(); });
+  $('#chk-pause').addEventListener('change', () => setPaused($('#chk-pause').checked));
+  $('#btn-clear').addEventListener('click', () => { View.clear(); toast('已清空', 'info', 1200); });
+  $('#viewer-wrap').addEventListener('click', (e) => { if (state.paused && e.target.id === 'pause-banner') setPaused(false); });
+  let filterTimer = null;
+  $('#in-filter').addEventListener('input', () => {
+    clearTimeout(filterTimer);
+    filterTimer = setTimeout(() => {
+      S.filter = $('#in-filter').value.trim();
+      $('#in-filter').classList.toggle('active', !!S.filter);
+      rebuildView();
+      Store.save();
+      toast(S.filter ? '过滤已应用' : '过滤已清除', 'info', 1000);
+    }, 350);
+  });
+  $('#btn-case').addEventListener('click', () => { S.caseSensitive = !S.caseSensitive; $('#btn-case').classList.toggle('accent', S.caseSensitive); rebuildView(); Store.save(); toast('大小写匹配：' + (S.caseSensitive ? '开' : '关'), 'info', 1200); });
+  $('#btn-filteronly').addEventListener('click', () => { S.filterOnly = !S.filterOnly; $('#btn-filteronly').classList.toggle('accent', S.filterOnly); rebuildView(); Store.save(); toast('仅显示匹配行：' + (S.filterOnly ? '开' : '关'), 'info', 1200); });
+  $('#chk-alarm').addEventListener('change', () => { S.alarmOn = $('#chk-alarm').checked; Store.save(); toast('报警：' + (S.alarmOn ? '开' : '关'), S.alarmOn ? 'ok' : 'info', 1200); });
+  let alarmTimer = null;
+  $('#in-alarm').addEventListener('input', () => {
+    clearTimeout(alarmTimer);
+    alarmTimer = setTimeout(() => { S.alarmWords = $('#in-alarm').value; Alarm.setWords(S.alarmWords); Store.save(); }, 350);
+  });
+  
+  // 修改：点击按钮触发导出 txt
+  $('#btn-export').addEventListener('click', exportLog);
+  
+  $('#chk-autolog').addEventListener('change', () => {
+    S.autoLog = $('#chk-autolog').checked;
+    AutoLog.on = S.autoLog;
+    Store.save();
+    toast('自动保存日志：' + (S.autoLog ? '开（连接串口后生效）' : '关'), S.autoLog ? 'ok' : 'info', 1500);
+    AutoLog.updateStatus();
+  });
+  $('#btn-logdir').addEventListener('click', () => AutoLog.pickDir());
+  $('#btn-pick').addEventListener('click', async () => { const p = await Serial.pickPort(); if (p) toast('已选择端口', 'ok'); });
+  $('#btn-connect').addEventListener('click', onConnectClick);
+  $('#btn-send').addEventListener('click', doSend);
+  $('#in-send').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); doSend(); return; }
+    if (e.ctrlKey && e.key.toLowerCase() === 'c') { e.preventDefault(); const _b = new Uint8Array([0x03]); Serial.send(_b).then((ok) => { if (ok) viewAddTx('^C', _b); }); return; }
+    if (e.ctrlKey && e.key.toLowerCase() === 'd') { e.preventDefault(); const _b = new Uint8Array([0x04]); Serial.send(_b).then((ok) => { if (ok) viewAddTx('^D', _b); }); return; }
+    if (e.key === 'ArrowUp') { e.preventDefault(); histPrev(); }
+    if (e.key === 'ArrowDown') { e.preventDefault(); histNext(); }
+  });
+  $('#sel-sendmode').addEventListener('change', () => { S.sendMode = $('#sel-sendmode').value; Store.save(); });
+  $('#sel-crlf').addEventListener('change', () => { S.crlf = $('#sel-crlf').value; Store.save(); });
+  $('#btn-quickadd').addEventListener('click', () => {
+    const v = $('#in-send').value.trim();
+    if (!v) { toast('先输入要保存的内容', 'warn'); return; }
+    if (S.quickSends.includes(v)) { toast('快捷项已存在', 'info'); return; }
+    if (S.quickSends.length >= 12) { toast('快捷项最多 12 条，请先删除', 'warn'); return; }
+    S.quickSends.push(v); Store.save(); renderQuickSends(); toast('已保存快捷项', 'ok');
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.ctrlKey && e.key.toLowerCase() === 'l') { e.preventDefault(); View.clear(); }
+  });
+}
+async function onConnectClick() {
+  if (state.busy) return;
+  state.busy = true;
+  updateConnectBtn();
+  try {
+    if (state.connected) { await Serial.disconnect(false); return; }
+    const opts = Serial.getOpts();
+    let port = null;
+    const sel = $('#sel-port');
+    const ports = state.grantedPorts || [];
+    if (sel.value !== '' && ports.length) port = ports[Number(sel.value)];
+    if (!port) port = state.lastPort;
+    if (!port) {
+      toast('请先在系统对话框中选择串口', 'warn');
+      port = await Serial.pickPort();
+      if (!port) return;
+    }
+    await Serial.connect(port, opts);
+  } finally {
+    state.busy = false;
+    updateConnectBtn();
+  }
+}
+function maybeApplyParams(label) {
+  if (state.connected && state.lastPort) {
+    toast(label + '已修改，正在重新打开端口…', 'info');
+    (async () => {
+      await Serial.disconnect(true);
+      await Serial.connect(state.lastPort, Serial.getOpts());
+    })();
+  }
+}
+
+function tickClock() {
+  const d = new Date();
+  $('#st-clock').textContent = pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
+}
+
+async function init() {
+  populateBaud();
+  applySettingsToUI();
+  Theme.init();
+  bindUI();
+  tickClock();
+  setInterval(tickClock, 1000);
+  state.cmdHist = S.cmdHist || [];
+  setInterval(() => {
+    const cur = state.rx;
+    $('#st-rate').textContent = fmtBytes(cur - lastRx) + '/s';
+    lastRx = cur;
+  }, 1000);
+  if (!navigator.serial) {
+    const bar = document.createElement('div');
+    bar.className = 'unsupported';
+    bar.textContent = '⚠ 当前浏览器不支持 Web Serial API，请使用 Chrome 或 Edge 打开本文件';
+    document.body.prepend(bar);
+    return;
+  }
+  await Serial.refreshPorts(S.lastPortName);
+  if (TEST_MODE) {
+    window.__test = {
+      feed(bytes) {
+        const port = state.port || (fakeSerial._ports[0]);
+        if (!port) throw new Error('no fake port');
+        if (port._ctrl) port.feed(bytes instanceof Uint8Array ? bytes : new TextEncoder().encode(String(bytes)));
+      },
+      feedBytes(arr) { const p = state.port || fakeSerial._ports[0]; if (p) p.feed(new Uint8Array(arr)); },
+      txBytes() { const p = state.port || fakeSerial._ports[0]; return p ? p.txAll().total : 0; },
+      txAll() { const p = state.port || fakeSerial._ports[0]; return p ? p.txAll() : { bytes: [], total: 0 }; },
+      drop() { const p = state.port || fakeSerial._ports[0]; if (p) p.drop(); },
+      cancelNextPick() { fakeSerial._cancelNext = true; },
+      clearLastPort() { state.lastPort = null; state.lastPortName = ''; },
+      clearHist() { state.cmdHist.length = 0; S.cmdHist = state.cmdHist; },
+      setAutoLogLimit(n) { AutoLog.limit = n; },
+      clearAutoLogDir() { AutoLog.dir = null; },
+      autoLogState() { return { on: AutoLog.on, mode: AutoLog.mode, base: AutoLog.base, seg: AutoLog.seg, bufBytes: AutoLog.bufBytes }; },
+      autoLogFiles() { return window.__autoLogFiles || {}; },
+      installFakeDir() {
+        window.__autoLogFiles = {};
+        window.showDirectoryPicker = async () => ({
+          getFileHandle: async (name) => ({
+            name,
+            createWritable: async () => ({
+              write: (text) => { window.__autoLogFiles[name] = (window.__autoLogFiles[name] || '') + String(text); },
+              close: async () => {}
+            })
+          })
+        });
+        return true;
+      },
+      failNextOpen(msg) { const p = state.port || fakeSerial._ports[0]; if (p) p._failOpen = msg || '模拟打开失败'; },
+      failNextWrite(msg) { const p = state.port || fakeSerial._ports[0]; if (p) p._failWrite = msg || '模拟写入失败'; },
+      setPorts(names) {
+        fakeSerial._ports = names.map((n, i) => new FakePortClass(n, i + 1));
+        try { sessionStorage.setItem('__testPorts', names.join(',')); } catch (e) {}
+        if (state.grantedPorts) state.grantedPorts = fakeSerial._ports;
+        return Serial.refreshPorts();
+      },
+      connect() { return onConnectClick(); },
+      disconnect() { return Serial.disconnect(false); },
+      settings() { return S; },
+      state() { return state; },
+      viewerLines() { return $('#viewer').children.length; },
+      rebuildMs() { const t0 = performance.now(); rebuildView(); return performance.now() - t0; },
+      viewerText() { return $('#viewer').textContent; },
+      log() { return state.log; }
+    };
+    console.log('[test] fake serial ready');
+  }
+}
+init();
+</script>
+</body>
+</html>
