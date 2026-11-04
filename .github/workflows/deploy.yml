@@ -9,9 +9,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
         with:
-          fetch-depth: 0 # 必须拉取所有历史记录，否则向 Gitee 推送时会报错
+          fetch-depth: 0 
 
       - name: Deploy to VPS
         uses: appleboy/scp-action@master
@@ -19,6 +19,7 @@ jobs:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
+          port: 2354  # <--- 【已修改】指定了正确的端口号
           source: "index.html"
           target: "/root/webserial/html/"
 
@@ -26,12 +27,8 @@ jobs:
         env:
           GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
         run: |
-          # 配置 Git 身份，防止推送被拒绝
           git config --global user.name "9fusheng"
           git config --global user.email "fu_sheng9@163.com"
-          
-          # 添加 Gitee 远程仓库（使用你配置的 GITEE_TOKEN 环境变量）
+          git config --global --add safe.directory '*'
           git remote add gitee https://fusheng9:${GITEE_TOKEN}@gitee.com/fusheng9/webserial.git
-          
-          # 强制推送当前 main 分支到 Gitee，覆盖云端记录
           git push gitee main --force
