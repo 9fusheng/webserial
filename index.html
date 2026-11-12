@@ -587,7 +587,7 @@ let S = Store.load();
 const state = {
   port: null, reader: null, writer: null, connected: false,
   lastPort: null, lastPortName: '',
-  pending: '', pendingBytes: [], 
+  pending: '', pendingBytes: [], pendingCR: false,
   rx: 0, tx: 0,
   paused: false, pausedBuf: [], pausedBytes: 0,
   log: [],
@@ -606,6 +606,7 @@ const MAX_LOG = 100000;
 const HEX_COL = 16;
 const ROW_HEIGHT = 24; 
 const BUFFER_ROWS = 10; 
+const CONTENT_PAD_Y = 20; // .viewer-content 上下 padding 各 10px，需计入滚动高度
 
 // 高性能批处理对象
 const Batch = {
@@ -704,8 +705,7 @@ const View = {
       if (resizeTimer) clearTimeout(resizeTimer);
       resizeTimer = setTimeout(() => {
         // 直接设 phantom 高度（不通过 scheduleRender 避免 guard 挡住）
-        const log = this.getFilteredLog();
-        this.phantom.style.height = (log.length * ROW_HEIGHT) + 'px';
+        this.phantom.style.height = this.phantomHeight() + 'px';
         // 强制一次完整 render（重置 _renderScheduled guard）
         this._renderScheduled = false;
         this.render();
@@ -718,9 +718,20 @@ const View = {
     return state.log.filter(e => entryMatches(e));
   },
 
+  // 末尾半截行是否作为一行显示
+  _hasPendingRow() {
+    return !!state.pending && S.mode === 'ascii' && !state.paused;
+  },
+
+  // 滚动内容总高度 = 行数 × 行高 + 上下 padding
+  phantomHeight() {
+    const rows = this.getFilteredLog().length + (this._hasPendingRow() ? 1 : 0);
+    if (rows <= 0) return 0;
+    return rows * ROW_HEIGHT + CONTENT_PAD_Y;
+  },
+
   updateData(forceScrollBottom = false) {
-    const log = this.getFilteredLog();
-    const newHeight = log.length * ROW_HEIGHT;
+    const newHeight = this.phantomHeight();
 
     // autoScroll=false：先冻住当前 scrollTop，防止 phantom 撑高后被浏览器 scroll anchor 偷偷推高
     if (!S.autoScroll && !forceScrollBottom) {
@@ -761,7 +772,18 @@ const View = {
 
     const log = this.getFilteredLog();
     if (log.length === 0) {
-      this.content.innerHTML = '<div class="line sys"><span class="msg"><b>无匹配结果</b></span></div>';
+      if (this._hasPendingRow()) {
+        let pText = state.pending;
+        if (pText.length > 2000) pText = '...' + pText.slice(-2000);
+        const msgContent = highlight(escapeHtml(pText), S.filter, S.caseSensitive) || '&nbsp;';
+        this.content.innerHTML =
+          `<div class="line pending" style="height:${ROW_HEIGHT}px;">` +
+          (S.showTs ? '<span class="ts">' + fmtTime() + '</span>' : '') +
+          '<span class="msg">' + msgContent + '</span></div>';
+        this.content.style.transform = 'translateY(0px)';
+      } else {
+        this.content.innerHTML = '<div class="line sys"><span class="msg"><b>无匹配结果</b></span></div>';
+      }
       return;
     }
 
@@ -793,29 +815,21 @@ const View = {
       parts.push(html);
     }
 
-    this.content.innerHTML = parts.join('');
-    this.content.style.transform = `translateY(${startIdx * ROW_HEIGHT}px)`;
-
-    // 处理末尾的 pending 行
-    let existingPending = this.content.querySelector('.pending');
-    if (existingPending) existingPending.remove();
-
-    if (state.pending && S.mode === 'ascii' && !state.paused) {
-      const pendingDiv = document.createElement('div');
-      pendingDiv.className = 'line pending';
-      pendingDiv.style.position = 'absolute';
-      pendingDiv.style.bottom = '-24px';
-      pendingDiv.style.width = '100%';
-      
+    // 末尾半截行：作为普通行接在最后一条之后（不再绝对定位，避免撑出空白滚动区）
+    if (endIdx === log.length && this._hasPendingRow()) {
       // 防止超长 pending 文本卡死 DOM
       let pText = state.pending;
-      if (pText.length > 2000) pText = '...' + pText.slice(-2000); 
-      
+      if (pText.length > 2000) pText = '...' + pText.slice(-2000);
       const msgContent = highlight(escapeHtml(pText), S.filter, S.caseSensitive) || '&nbsp;';
-      pendingDiv.innerHTML = (S.showTs ? '<span class="ts">' + fmtTime() + '</span>' : '') + '<span class="msg">' + msgContent + '</span>';
-      
-      this.content.appendChild(pendingDiv);
+      parts.push(
+        `<div class="line pending" style="height:${ROW_HEIGHT}px;">` +
+        (S.showTs ? '<span class="ts">' + fmtTime() + '</span>' : '') +
+        '<span class="msg">' + msgContent + '</span></div>'
+      );
     }
+
+    this.content.innerHTML = parts.join('');
+    this.content.style.transform = `translateY(${startIdx * ROW_HEIGHT}px)`;
 
     if (this._shouldScrollToBottom) {
       this._shouldScrollToBottom = false;
@@ -830,7 +844,7 @@ const View = {
     if (state.hexFlushTimer) { clearTimeout(state.hexFlushTimer); state.hexFlushTimer = null; }
 
     // 2. 重置数据（保留 paused 状态，只清暂停缓存）
-    state.pending = ''; state.pendingBytes = []; state.log = [];
+    state.pending = ''; state.pendingBytes = []; state.pendingCR = false; state.log = [];
     state.pausedBuf = []; state.pausedBytes = 0;
     updatePauseBanner();
     state.rx = 0; state.tx = 0; lastRx = 0;
@@ -891,23 +905,50 @@ function onBytes(bytes, decoder) {
     return;
   }
 
-  let text = decoder.decode(bytes, { stream: true });
-  if (text) {
-    if (text.indexOf('\uFEFF') !== -1) text = text.replace(/\uFEFF/g, '');
-    state.pending += text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
-    let idx;
-    while ((idx = state.pending.indexOf('\n')) >= 0) {
-      const line = state.pending.slice(0, idx);
-      state.pending = state.pending.slice(idx + 1);
-      
-      if (S.showTs && line.trim() === '') continue;
-      
-      Batch.add({ kind: 'txt', t: fmtTime(), ascii: line, hex: hexStr(new TextEncoder().encode(line)) });
-    }
-    View.scheduleRender();
+  // 文本模式：按字节切行（\r、\n、\r\n 都算换行）
+  // 好处：\r 与 \n 被拆到两次读取时也能正确换行，不依赖字符串反复截取
+  let buf = bytes;
+  if (!buf.length) return; // 空读取：保持 pendingCR 状态不变，等下一段数据
+  // 上一次读取以 \r 结尾，本次开头的 \n 属于同一个 CRLF，跳过
+  if (state.pendingCR) {
+    if (buf[0] === 0x0A) buf = buf.subarray(1);
+    state.pendingCR = false;
   }
+  if (!buf.length) return;
+
+  let start = 0;
+  for (let i = 0; i < buf.length; i++) {
+    const b = buf[i];
+    // \r、\n 是换行符；0x00（NUL）是很多串口设备的填充/分隔符，也按换行处理
+    if (b !== 0x0D && b !== 0x0A && b !== 0x00) continue;
+
+    state.pending += decoder.decode(buf.subarray(start, i), { stream: true });
+    pushTextLine(state.pending, b === 0x00);
+    state.pending = '';
+
+    if (b === 0x0D) {
+      if (i + 1 < buf.length && buf[i + 1] === 0x0A) {
+        i++; // 同一次读取内的 CRLF，\n 一起吃掉
+      } else if (i + 1 === buf.length) {
+        state.pendingCR = true; // \r 在末尾，可能需要和下一次读取的 \n 配对
+      }
+    }
+    start = i + 1;
+  }
+
+  if (start < buf.length) {
+    state.pending += decoder.decode(buf.subarray(start), { stream: true });
+  }
+  View.updateData();
 }
 
+// 把一行文本写入日志（带时间戳时忽略空行；NUL 填充产生的空段一律忽略）
+function pushTextLine(line, fromNul) {
+  if (line.indexOf('\uFEFF') !== -1) line = line.replace(/\uFEFF/g, '');
+  if (fromNul && line.trim() === '') return;
+  if (S.showTs && line.trim() === '') return;
+  Batch.add({ kind: 'txt', t: fmtTime(), ascii: line, hex: hexStr(new TextEncoder().encode(line)) });
+}
 function viewAddTx(text, bytes) {
   showEmpty(false);
   const t = fmtTime();
