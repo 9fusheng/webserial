@@ -1,0 +1,20 @@
+changelog:
+  categories:
+    - title: 🚀 新功能 (Features)
+      labels:
+        - feat
+        - feature
+        - enhancement
+    - title: 🐛 Bug 修复 (Bug Fixes)
+      labels:
+        - fix
+        - bugfix
+        - bug
+    - title: 📖 文档与其他 (Documentation & Chores)
+      labels:
+        - docs
+        - chore
+        - ci
+    - title: 其他更新 (Other Changes)
+      labels:
+        - "*"
