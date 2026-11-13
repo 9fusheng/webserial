@@ -961,7 +961,28 @@ function viewAddTx(text, bytes) {
   View.updateData(true);
 }
 
+// 把还没结束的残余数据落成完整一行（断线/提示前调用）
+function flushPendingInput() {
+  // 文本模式：未收到换行符的半截行
+  if (state.pending) {
+    const p = state.pending;
+    state.pending = '';
+    state.pendingCR = false;
+    pushTextLine(p);
+  }
+  // HEX 模式：不足 16 字节的残余数据
+  if (state.pendingBytes && state.pendingBytes.length) {
+    const chunk = state.pendingBytes.splice(0);
+    const hex = hexStr(chunk);
+    const asc = Array.from(chunk).map((b) => (b >= 32 && b <= 126 ? String.fromCharCode(b) : '.')).join('');
+    Batch.add({ kind: 'hex', t: fmtTime(), ascii: asc, hex: hex + '  |' + asc + '|' });
+  }
+  if (state.hexFlushTimer) { clearTimeout(state.hexFlushTimer); state.hexFlushTimer = null; }
+}
+
 function viewAddSys(msg, isErr) {
+  // 先把半截行落盘，保证提示显示在整个接收区的最后一行
+  flushPendingInput();
   Batch.add({ kind: isErr ? 'sysErr' : 'sys', t: fmtTime(), ascii: msg, hex: '' });
   Batch.flush();
   View.updateData(true);
